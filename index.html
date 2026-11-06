@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F7F5F1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Unstick">
+<meta name="description" content="Unstick: a tiny, low-pressure first move when you feel creatively stuck. Prototype.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Cellipse cx=%2732%27 cy=%2732%27 rx=%2728%27 ry=%2724%27 fill=%27%23F7D85F%27 stroke=%27%23141414%27 stroke-width=%275%27/%3E%3C/svg%3E">
+<title>Unstick</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Inter:wght@400;600&family=Instrument+Serif:ital@0;1&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F5F1; --ink: #141414; --muted: #444;
+    --coral: #EE6A4A; --blue: #5E9CF2; --green: #8DF0A7; --pink: #F5A7D2; --yellow: #F7D85F; --sky: #BFE0FF; --peach: #F8D6C8;
+    --serif: 'Instrument Serif', Georgia, serif; --script: 'Caveat', 'Comic Sans MS', cursive; --sans: 'Inter', system-ui, sans-serif; --mono: 'Space Mono', 'Courier New', monospace;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #EDE8DF; color: var(--ink); font-family: var(--sans);
+    min-height: 100vh; display: flex; justify-content: center; align-items: flex-start;
+    gap: 40px; padding: 32px 16px; flex-wrap: wrap;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+
+  .phone {
+    width: 390px; height: min(800px, calc(100dvh - 48px)); border: 10px solid var(--ink); border-radius: 52px;
+    background: var(--bg); position: relative; overflow: hidden; flex: none; box-shadow: 0 20px 50px rgba(0,0,0,.18);
+  }
+  .island { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 100px; height: 28px; background: var(--ink); border-radius: 20px; z-index: 5; }
+  .screen { position: absolute; inset: 0; padding: 60px 22px 24px; overflow-y: auto; overflow-x: hidden; display: none; }
+  .screen.active { display: block; }
+  .screen.has-nav { padding-bottom: 96px; }
+  .fill-calm { background: linear-gradient(180deg, #F7F5F1 0%, #BFE0FF 55%, #8DF0A7 100%); }
+  .fill-warm { background: linear-gradient(180deg, #F7F5F1 0%, #F8D6C8 60%, #F5A7D2 100%); }
+  .screen.locked { background: #141414 !important; color: #F7F5F1; }
+  .screen.locked .small { color: #C9C4BA; }
+  .screen.locked .script, .screen.locked h2 { color: #F7F5F1; }
+  .screen.locked .pill:disabled { opacity: 1; background: #BFE0FF; }
+  .screen.locked .deco { display: none; }
+
+  h1, h2 { font-family: var(--serif); font-weight: 400; margin: 0; letter-spacing: -.5px; line-height: .98; }
+  h1 { font-size: 46px; } h2 { font-size: 34px; }
+  h3.sub { font-family: var(--serif); font-weight: 400; font-size: 24px; margin: 18px 0 4px; }
+  .script { font-family: var(--script); font-weight: 700; font-size: 22px; }
+  p { margin: 10px 0; line-height: 1.45; font-size: 16px; }
+  .small { font-size: 14px; color: var(--muted); }
+  .hl { background: linear-gradient(transparent 60%, var(--pink) 60%); }
+  .hl-green { background: linear-gradient(transparent 60%, var(--green) 60%); }
+  .italic { font-style: italic; }
+
+  /* playful pieces */
+  .sticker { display: inline-block; border: 2.5px solid var(--ink); background: var(--yellow); border-radius: 12px; padding: 6px 12px; font-family: var(--script); font-weight: 700;
+    font-size: 21px; transform: rotate(-3deg); box-shadow: 3px 3px 0 var(--ink); line-height: 1.1; }
+  .sticker.pink { background: var(--pink); transform: rotate(2.5deg); } .sticker.green { background: var(--green); transform: rotate(-1.5deg); } .sticker.white { background: #fff; }
+  .tilt { display: inline-block; transform: rotate(-2deg); }
+  .deco { position: absolute; pointer-events: none; z-index: 0; }
+  .above { position: relative; z-index: 1; }
+
+  .blob {
+    border: 2.5px solid var(--ink); background: var(--coral); min-height: 60px; padding: 14px 34px;
+    border-radius: 52% 48% 56% 44% / 58% 46% 54% 42%; font-family: var(--serif); font-size: 22px; display: inline-block; transition: transform .12s; box-shadow: 3px 3px 0 var(--ink);
+  }
+  .blob.yellow { background: var(--yellow); } .blob.green { background: var(--green); }
+  .blob:disabled { opacity: .45; cursor: not-allowed; }
+  .blob:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+  .pill {
+    border: 2.5px solid var(--ink); border-radius: 999px 999px 999px 999px / 60% 60% 60% 60%; min-height: 52px; padding: 12px 20px;
+    background: var(--blue); color: var(--ink); font-family: var(--script); font-weight: 700; font-size: 22px; text-align: center; display: block; width: 100%; box-shadow: 3px 3px 0 var(--ink);
+  }
+  .pill.coral { background: var(--coral); } .pill.green { background: var(--green); } .pill.pink { background: var(--pink); } .pill.yellow { background: var(--yellow); } .pill.white { background: #fff; } .pill.flat { box-shadow: none; }
+  .pill:disabled { opacity: .6; cursor: default; }
+  .pill:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+  .pill .desc { display: block; font-family: var(--sans); font-weight: 400; font-size: 13px; margin-top: 2px; }
+  .row > .pill { padding: 10px 6px; font-size: 19px; line-height: 1.1; min-width: 0; }
+  .link { background: none; border: 0; text-decoration: underline; font-size: 15px; padding: 12px 4px; min-height: 44px; }
+  .row { display: flex; gap: 10px; } .row > * { flex: 1; }
+  .center { text-align: center; }
+  .stack > * + * { margin-top: 12px; }
+  .nudge { transform: rotate(-1deg); } .nudge2 { transform: rotate(1.2deg); } .nudge3 { transform: rotate(-.6deg); }
+
+  .chip { border: 2px solid var(--ink); border-radius: 999px; padding: 10px 14px; min-height: 44px; background: #fff; font-size: 15px; text-align: left; }
+  .chip[aria-pressed="true"] { background: var(--green); font-weight: 600; }
+  .chips { display: flex; gap: 8px; margin: 10px 0; flex-direction: column; align-items: stretch; }
+  .chips.wrap { flex-direction: row; flex-wrap: wrap; }
+
+  .rates { display: flex; justify-content: space-between; margin: 18px 0 6px; }
+  .rate { width: 54px; height: 54px; border-radius: 50%; border: 2.5px solid var(--ink); background: #fff; font-family: var(--serif); font-size: 26px; }
+  .rate[aria-pressed="true"] { background: var(--yellow); transform: scale(1.1); }
+  .rate-ends { display: flex; justify-content: space-between; font-size: 14px; color: var(--muted); }
+
+  .card { border: 2.5px solid var(--ink); border-radius: 26px 22px 28px 20px; padding: 18px; background: #fff; }
+  .card.pink { background: var(--pink); } .card.yellow { background: var(--yellow); } .card.green { background: var(--green); } .card.sky { background: var(--sky); }
+  .tag { display: inline-block; border: 2px solid var(--ink); border-radius: 999px; padding: 3px 12px; font-size: 14px; background: var(--pink); color: var(--ink); }
+  .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+  .switch input { width: 26px; height: 26px; accent-color: var(--ink); flex: none; }
+
+  .big-time { font-family: var(--serif); font-size: 96px; line-height: 1; margin: 34px 0 6px; }
+  label.f { display: block; font-size: 14px; font-weight: 600; margin: 12px 0 4px; }
+  textarea, input[type=text], input[type=email], input[type=password], input[type=number] { width: 100%; border: 2.5px solid var(--ink); border-radius: 18px; padding: 13px; font: inherit; font-size: 16px; background: #fff; }
+  textarea { min-height: 150px; resize: vertical; }
+
+  .list { list-style: none; padding: 0; margin: 14px 0 0; }
+  .list li { border: 2px solid var(--ink); border-radius: 18px; padding: 12px 14px; background: #fff; margin-bottom: 10px; }
+  .list .head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .list .head strong { font-family: var(--serif); font-weight: 400; font-size: 20px; }
+
+  .seg { display: inline-flex; border: 2px solid var(--ink); border-radius: 999px; overflow: hidden; margin: 4px 0; flex-wrap: wrap; }
+  .seg button { border: 0; background: #fff; padding: 8px 14px; font-size: 14px; min-height: 40px; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: #fff; }
+
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+  .tile { border: 2.5px solid var(--ink); border-radius: 20px; background: #fff; overflow: hidden; text-align: left; padding: 0; display: block; width: 100%; }
+  .tile .art { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: var(--yellow); position: relative; overflow: hidden; }
+  .tile .art img { width: 100%; height: 100%; object-fit: cover; }
+  .tile .art svg { width: 100%; height: 100%; }
+  .tile .art .words { padding: 12px; font-family: var(--serif); font-size: 18px; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; width: 100%; }
+  .tile .cap, .wallcard .cap { padding: 8px 10px; font-size: 13px; border-top: 2px solid var(--ink); }
+  .tile .cap b, .wallcard .cap b { font-weight: 600; display: block; }
+  .meto { display: block; margin: 0; width: 100%; border: 0; border-top: 2px solid var(--ink); background: #fff; padding: 8px; font-size: 13px; min-height: 40px; }
+  .meto[aria-pressed="true"] { background: var(--pink); font-weight: 600; }
+  .wallcard { border: 2.5px solid var(--ink); border-radius: 20px; overflow: hidden; background: #fff; }
+  .photo-btn { cursor: pointer; position: relative; }
+  .photo-btn input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .preview { width: 100%; max-height: 260px; object-fit: cover; border: 2.5px solid var(--ink); border-radius: 20px; margin-top: 12px; }
+
+  .stamps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+  .stamp { border: 2.5px solid var(--ink); border-radius: 50%; aspect-ratio: 1; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 4px; font-size: 12px; line-height: 1.1; text-align: center; min-width: 0; overflow: hidden; }
+  .stamp b { font-family: var(--serif); font-weight: 400; font-size: 16px; display: block; line-height: 1; word-break: break-word; }
+  .stamp.got { background: var(--green); }
+  .playbadge { position: absolute; right: 8px; bottom: 8px; width: 30px; height: 30px; border-radius: 50%; background: #fff; border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .stamp:nth-child(3n+2) { margin-top: 14px; }
+  .bar-wrap { height: 12px; border: 2px solid var(--ink); border-radius: 999px; background: #fff; overflow: hidden; margin: 8px 0 4px; }
+  .bar-fill { height: 100%; background: var(--coral); width: 0; }
+  .dots { display: flex; gap: 8px; margin: 8px 0 2px; }
+  .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--ink); background: #fff; }
+  .dot.on { background: var(--coral); }
+
+  .avatar { width: 92px; height: 92px; border-radius: 50%; border: 3px solid var(--ink); background: var(--pink); overflow: hidden; display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 44px; flex: none; box-shadow: 3px 3px 0 var(--ink); }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .prof { display: flex; gap: 16px; align-items: center; }
+  .kitopt { border: 2.5px solid var(--ink); border-radius: 22px; background: #fff; padding: 14px 16px; width: 100%; text-align: left; display: block; }
+  .kitopt[aria-pressed="true"] { background: var(--green); }
+  .kitopt b { font-family: var(--serif); font-weight: 400; font-size: 22px; display: block; }
+
+  @keyframes pulse { 0% { box-shadow: 3px 3px 0 var(--ink), 0 0 0 0 rgba(238,106,74,.55); } 70% { box-shadow: 3px 3px 0 var(--ink), 0 0 0 16px rgba(238,106,74,0); } 100% { box-shadow: 3px 3px 0 var(--ink), 0 0 0 0 rgba(238,106,74,0); } }
+  .pulse { animation: pulse 1.8s ease-out infinite; }
+  details.fold { border: 2.5px solid var(--ink); border-radius: 20px; background: #fff; padding: 2px 16px; margin-top: 12px; }
+  details.fold summary { font-family: var(--serif); font-size: 22px; padding: 12px 0; cursor: pointer; }
+  details.fold[open] summary { border-bottom: 2px solid var(--ink); margin-bottom: 10px; }
+  details.fold[open] { padding-bottom: 12px; }
+  .bigbtn { min-height: 66px; font-size: 25px; }
+  .hold { position: relative; overflow: hidden; width: 100%; min-height: 56px; border: 2.5px solid #F7F5F1; border-radius: 999px;
+    background: transparent; color: #F7F5F1; font-family: var(--script); font-weight: 700; font-size: 21px; padding: 12px 20px; touch-action: none; user-select: none; }
+  .hold .bar { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(247,245,241,.28); transition: width 0s; }
+  .hold.holding .bar { width: 100%; transition: width 2s linear; }
+  .hold .txt { position: relative; }
+
+  .toast { position: absolute; left: 22px; right: 22px; bottom: 96px; background: var(--ink); color: #fff; border-radius: 16px; padding: 12px 16px; font-size: 14px; z-index: 8; display: none; }
+  .toast.show { display: block; }
+
+  .nav { position: absolute; left: 0; right: 0; bottom: 0; height: 76px; background: var(--bg); border-top: 2px solid var(--ink); display: none; z-index: 4; }
+  .nav.show { display: flex; }
+  .nav button { flex: 1; background: none; border: 0; font-family: var(--script); font-weight: 700; font-size: 21px; padding: 10px 0 0; min-height: 44px; }
+  .nav button[aria-current="page"] { text-decoration: underline wavy var(--coral); text-underline-offset: 6px; }
+
+  /* prompt vibe */
+  #prompt, #timer { transition: none; }
+  #p-title { transition: none; }
+  .slip { display: inline-block; border: 2.5px dashed currentColor; border-radius: 10px; padding: 8px 12px; font-family: var(--script); font-weight: 700; font-size: 21px; line-height: 1.1; background: rgba(255,255,255,.55); transform: rotate(-1.5deg); }
+  @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  .float { animation: floaty 5s ease-in-out infinite; }
+  @keyframes wob { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+  .wob { animation: wob 3s ease-in-out infinite; }
+
+  .notes { width: 430px; max-width: 100%; }
+  .notes h3 { font-family: var(--serif); font-weight: 400; font-size: 30px; margin: 0 0 8px; }
+  .notes ol { padding-left: 20px; margin: 0; }
+  .notes li { margin-bottom: 12px; line-height: 1.45; }
+  .notes b { font-weight: 600; }
+  .ctl { background: #fff; border: 2px solid var(--ink); border-radius: 14px; padding: 12px 14px; margin: 14px 0; }
+  .ctl h4 { margin: 0 0 8px; font-size: 15px; }
+  .ctl label { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+  .ctl input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--ink); }
+  .ctl .tbtn { border: 2px solid var(--ink); border-radius: 999px; background: #fff; padding: 8px 14px; font-size: 14px; margin: 4px 6px 4px 0; min-height: 40px; }
+  .ctl .seg { margin-top: 6px; }
+
+
+  /* ---------- stop-motion layer ---------- */
+  @keyframes boil { 0% { transform: rotate(-1.2deg) translate(0,0); } 33% { transform: rotate(1deg) translate(1px,-1px); } 66% { transform: rotate(-.4deg) translate(-1px,1px); } 100% { transform: rotate(-1.2deg) translate(0,0); } }
+  @keyframes jit { 0% { transform: rotate(calc(var(--r, 0deg) - .5deg)) translate(0,0); } 33% { transform: rotate(calc(var(--r, 0deg) + .6deg)) translate(1px,-1px); } 66% { transform: rotate(var(--r, 0deg)) translate(-1px,1px); } 100% { transform: rotate(calc(var(--r, 0deg) - .5deg)) translate(0,0); } }
+  @keyframes cutin { from { transform: translateY(20px) rotate(.8deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes twist { from { transform: rotate(0deg); } to { transform: rotate(90deg); } }
+  @keyframes burst { 0% { transform: translate(0,0) rotate(0) scale(.4); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(1); opacity: 0; } }
+  .sticker { animation: boil 1s steps(1) infinite; }
+  .wob { animation: boil .9s steps(1) infinite; }
+  #prompt.active { animation: cutin .5s steps(4) both; }
+  .confetti { position: absolute; width: 14px; height: 14px; border: 2px solid var(--ink); z-index: 6; pointer-events: none; animation: burst .8s steps(6) forwards; }
+
+  details.fold summary { list-style: none; display: flex; justify-content: space-between; align-items: center; }
+  details.fold summary::-webkit-details-marker { display: none; }
+  details.fold summary::after { content: ''; width: 34px; height: 34px; flex: none; animation: boil 1s steps(1) infinite;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cg stroke='%23141414' stroke-width='3.6' stroke-linecap='round' fill='none'%3E%3Cpath d='M20 6 L21 34'/%3E%3Cpath d='M7 13 L33 27'/%3E%3Cpath d='M33 12 L8 28'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat; }
+  details.fold[open] summary::after { animation: twist .5s steps(4) forwards; }
+
+  .nav button { font-size: 18px; padding: 6px 0 0; }
+  .nav button svg { width: 26px; height: 26px; display: block; margin: 0 auto 1px; }
+  .nav button[aria-current="page"] svg { animation: boil .9s steps(1) infinite; }
+  .today { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+
+
+  /* ---------- the wall: pinned polaroids with emoji stickers ---------- */
+  #g-grid { gap: 18px 14px; margin-top: 18px; }
+  .wallcard { position: relative; overflow: visible; border: 2.5px solid var(--ink); border-radius: 6px 12px 8px 14px; padding: 8px 8px 4px; background: #fff; box-shadow: 3px 3px 0 var(--ink); }
+  #g-grid .wallcard:nth-child(odd) { transform: rotate(-1.6deg); }
+  #g-grid .wallcard:nth-child(even) { transform: rotate(1.4deg); margin-top: 10px; }
+  .wallcard::before { content: ''; position: absolute; top: -10px; left: 50%; width: 56px; height: 18px; background: rgba(247,216,95,.9); border: 1.5px solid rgba(20,20,20,.35); transform: translateX(-50%) rotate(-4deg); z-index: 2; }
+  .wallcard .art { border: 2px solid var(--ink); border-radius: 4px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--yellow); }
+  .wallcard .art img, .wallcard .art svg { width: 100%; height: 100%; object-fit: cover; }
+  .wallcard .art .words { padding: 10px; font-family: var(--serif); font-size: 17px; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; width: 100%; }
+  .wallcard .cap { border-top: 0; padding: 8px 2px 2px; font-size: 13px; }
+  .stickers { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 4px 0 6px; }
+  .stk { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--ink); background: #fff; font-size: 17px; line-height: 1; padding: 0; transform: rotate(var(--sr, 0deg)); box-shadow: 2px 2px 0 var(--ink); }
+  .stk[aria-pressed="true"] { background: var(--pink); }
+  .stk.pop { animation: stkpop .36s steps(3); }
+  @keyframes stkpop { 0% { transform: rotate(var(--sr, 0deg)) scale(.7); } 50% { transform: rotate(calc(var(--sr, 0deg) + 14deg)) scale(1.35); } 100% { transform: rotate(var(--sr, 0deg)) scale(1); } }
+
+  /* ---------- places strip on Home ---------- */
+  .strip { display: flex; gap: 10px; overflow-x: auto; padding: 6px 4px 12px; margin: 0 -4px; scroll-snap-type: x proximity; }
+  .strip .stamp { flex: none; width: 96px; height: 96px; margin-top: 0 !important; scroll-snap-align: start; }
+
+
+  /* ---------- the wall as a feed (one column, big images) ---------- */
+  .today { display: block; }
+  .today .pill { width: 100%; margin-top: 12px; }
+  .feed { display: flex; flex-direction: column; gap: 22px; margin-top: 16px; }
+  .post { border: 2.5px solid var(--ink); border-radius: 22px; background: #fff; box-shadow: 3px 3px 0 var(--ink); overflow: hidden; }
+  .ph { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+  .ph > div { min-width: 0; }
+  .pav { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--ink); flex: none; overflow: hidden; display: block; }
+  .pav svg { width: 100%; height: 100%; display: block; }
+  .ph strong { display: block; font-size: 14px; line-height: 1.2; }
+  .ph .ptag { margin-left: auto; font-size: 12px; padding: 2px 10px; background: var(--pink); flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pm { border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); aspect-ratio: 1; background: var(--yellow); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .pm img, .pm > svg { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .pnote { padding: 24px; font-family: var(--serif); font-size: 30px; line-height: 1.08; width: 100%; }
+  .paudio { padding: 8px 12px 0; }
+  .paudio audio { width: 100%; }
+  .pact { display: flex; gap: 12px; padding: 10px 12px 4px; }
+  .post .stk { width: 46px; height: 46px; font-size: 23px; }
+  .pcap { margin: 0; padding: 2px 14px 14px; font-size: 14px; color: var(--muted); }
+
+
+  #demo-fab { display: none; position: fixed; right: 12px; top: 12px; z-index: 60; border: 2px solid var(--ink); border-radius: 999px; background: #fff; padding: 8px 14px; font-size: 13px; box-shadow: 2px 2px 0 var(--ink); }
+  #demo-panel { display: none; position: fixed; right: 12px; top: 54px; z-index: 60; width: min(340px, calc(100vw - 28px)); max-height: 70vh; overflow: auto; margin: 0; box-shadow: 3px 3px 0 var(--ink); }
+  #demo-panel.open { display: block; }
+  body.demo #demo-fab { display: block; }
+  body { padding-top: 24px; padding-bottom: 24px; }
+
+  @media (max-width: 760px) {
+    body { padding: 0; gap: 0; display: block; }
+    .phone { width: 100%; height: 100vh; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+    .island { display: none; } .screen { padding-top: 40px; } .notes { padding: 20px 16px 40px; width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<main class="phone" aria-label="Unstick app demo">
+  <div class="island" aria-hidden="true"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- WELCOME -->
+  <section class="screen active" id="welcome" aria-labelledby="t-welcome" style="background: radial-gradient(circle at 85% 8%, #F7D85F 0 70px, transparent 71px), radial-gradient(circle at 8% 92%, #F5A7D2 0 90px, transparent 91px), var(--bg);">
+    <span class="sticker pink" style="position:absolute;top:56px;right:20px" data-i18n="w_sticker"></span>
+    <h1 id="t-welcome" class="above" style="margin-top:40px" data-i18n-html="w_h1a"></h1>
+    <h1 class="script above wob" style="font-size:64px;color:#E86AA6;margin-top:4px" data-i18n="w_h1b"></h1>
+    <h1 class="above" style="margin-top:4px" data-i18n-html="w_h1c"></h1>
+    <p class="script above" style="font-size:30px;margin-top:18px;color:#2E64C8" data-i18n="w_sub"></p>
+    <div class="center above" style="margin-top:30px">
+      <button class="blob yellow" id="w-start" data-i18n="w_btn"></button>
+      <p class="small" style="margin:14px 0 4px" data-i18n="w_note"></p>
+      <button class="link" id="w-signup" data-i18n="w_signup"></button>
+      <button class="link" id="w-login" data-i18n="w_login"></button>
+    </div>
+  </section>
+
+  <!-- AUTH (demo) -->
+  <section class="screen" id="auth" aria-labelledby="t-auth">
+    <button class="link" id="auth-back" data-i18n="back"></button>
+    <h2 id="t-auth"></h2>
+    <p class="small" id="auth-sub"></p>
+    <form id="auth-form" novalidate>
+      <div id="auth-name-wrap"><label class="f" for="a-name" data-i18n="au_name"></label><input type="text" id="a-name" autocomplete="name" maxlength="40"></div>
+      <label class="f" for="a-email" data-i18n="au_email"></label><input type="email" id="a-email" autocomplete="email" inputmode="email">
+      <label class="f" for="a-pass" data-i18n="au_pass"></label><input type="password" id="a-pass" autocomplete="current-password">
+      <p class="small" id="auth-err" role="alert" style="color:#B3261E;font-weight:600;margin-bottom:0"></p>
+      <div class="center" style="margin-top:16px"><button class="blob yellow" type="submit" id="auth-go"></button></div>
+    </form>
+    <div class="center">
+      <button class="link" id="auth-toggle"></button><br>
+      <button class="link" id="auth-skip" data-i18n="au_skip"></button>
+    </div>
+    <p class="small center" data-i18n="au_demo"></p>
+  </section>
+
+  <!-- WHAT DO YOU MAKE -->
+  <section class="screen" id="you" aria-labelledby="t-you">
+    <h2 id="t-you" data-i18n="y_title"></h2>
+    <p data-i18n="y_sub"></p>
+    <div class="chips wrap" id="y-chips" style="margin-top:16px"></div>
+    <div class="center" style="margin-top:26px"><button class="blob" id="y-go" data-i18n="y_go"></button></div>
+  </section>
+
+  <!-- HOME -->
+  <section class="screen has-nav" id="home" aria-labelledby="t-home">
+    <div class="card green" id="fu-card" style="display:none;margin-bottom:16px">
+      <p style="margin-top:0"><strong data-i18n="f_q"></strong></p>
+      <div class="stack" id="f-choices">
+        <button class="pill white" data-fu="yes" data-i18n="f_yes"></button>
+        <button class="pill white" data-fu="notyet" data-i18n="f_notyet"></button>
+        <button class="pill white" data-fu="skip" data-i18n="f_skip"></button>
+      </div>
+      <div id="f-more" style="display:none">
+        <p style="margin-bottom:4px"><label for="f-note" id="f-note-label"></label></p>
+        <input type="text" id="f-note" maxlength="120">
+        <div class="center" style="margin-top:12px"><button class="blob yellow" id="f-save" data-i18n="f_save"></button></div>
+      </div>
+    </div>
+    <p class="script" style="margin:0;color:#E86AA6" id="h-hello"></p>
+    <h1 id="t-home" data-i18n-html="h_title"></h1>
+    <p style="margin-top:14px"><strong data-i18n="h_q"></strong></p>
+    <div class="stack">
+      <button class="pill coral nudge" data-need="start"><span style="font-size:26px" data-i18n="n_start"></span><span class="desc" data-i18n="n_start_d"></span></button>
+      <button class="pill nudge2" data-need="hard"><span data-i18n="n_hard"></span><span class="desc" data-i18n="n_hard_d"></span></button>
+      <button class="pill green nudge3" data-need="surprise"><span data-i18n="n_surprise"></span><span class="desc" data-i18n="n_surprise_d"></span></button>
+    </div>
+    <h3 class="sub" data-i18n="m_places"></h3>
+    <p class="small" id="s-map-note" style="margin-top:0"></p>
+    <div class="strip" id="stamps"></div>
+    <div class="card sky" id="ch-card" style="margin-top:14px">
+      <span class="sticker white" data-i18n="ch_card"></span>
+      <h2 style="font-size:26px;margin-top:10px" id="ch-title"></h2>
+      <p class="small" style="color:#141414;margin-bottom:0" id="ch-desc"></p>
+      <div class="bar-wrap"><div class="bar-fill" id="ch-bar"></div></div>
+      <span class="small" style="color:#141414" id="ch-prog"></span>
+      <button class="pill white flat" id="ch-go" style="margin-top:8px"></button>
+    </div>
+    <h3 class="sub" id="h-lately" data-i18n="m_timeline"></h3>
+    <ul class="list" id="m-time"></ul>
+    <button class="pill pink nudge" id="h-kit" style="margin-top:14px"><span data-i18n="mm_b"></span><span class="desc" data-i18n="mm_d"></span></button>
+    <div class="card pink" id="acct-card" style="margin-top:14px;display:none">
+      <strong data-i18n="h_acct"></strong>
+      <p class="small" style="color:var(--ink)" data-i18n="h_acct_d"></p>
+      <div class="row"><button class="pill white flat" id="h-signup" data-i18n="w_signup"></button><button class="pill white flat" id="h-later" data-i18n="h_later"></button></div>
+    </div>
+  </section>
+
+  <!-- CHECK-IN -->
+  <section class="screen" id="checkin" aria-labelledby="t-checkin">
+    <button class="link" data-back data-i18n="back"></button>
+    <h2 id="t-checkin" data-i18n="c_title"></h2>
+    <p><strong data-i18n="c_q"></strong></p>
+    <div class="chips" id="blockers"></div>
+    <p style="margin-top:14px"><strong data-i18n="c_want"></strong> <span class="small" data-i18n="optional"></span></p>
+    <div class="chips wrap" id="wants"></div>
+    <div id="rate-before-wrap" style="display:none">
+      <p style="margin-top:14px"><strong data-i18n="c_rate"></strong></p>
+      <div class="rates" role="group" id="rates-before"></div>
+      <div class="rate-ends"><span data-i18n="easy"></span><span data-i18n="hard"></span></div>
+    </div>
+    <div class="center" style="margin-top:18px">
+      <button class="blob" id="go-prompt" data-i18n="c_go"></button><br>
+      <button class="link" id="skip-check" data-i18n="c_skip"></button>
+    </div>
+  </section>
+
+  <!-- PROMPT (takes on a different vibe per prompt) -->
+  <section class="screen" id="prompt" aria-labelledby="t-prompt">
+    <div class="deco" id="p-deco" aria-hidden="true" style="inset:0"></div>
+    <button class="link above" data-back data-i18n="back"></button>
+    <p class="script above" id="p-kind" style="margin-bottom:0"></p>
+    <h1 class="above" id="t-prompt" style="margin-top:6px"></h1>
+    <p class="above" style="font-size:19px;margin-top:16px" id="p-text"></p>
+    <p class="above"><span class="slip" id="p-slip"></span></p>
+    <p class="above small" id="p-feel" style="color:inherit;font-size:15px"></p>
+    <p class="above"><span class="tag" id="p-time"></span> <span class="tag" id="p-med" style="background:#fff"></span></p>
+    <div class="center above" style="margin-top:22px">
+      <button class="blob" id="p-start" data-i18n="p_start"></button><br>
+      <button class="link" id="p-swap" data-i18n="p_swap"></button>
+      <button class="link" id="p-how" data-i18n="p_how_link"></button>
+    </div>
+  </section>
+
+  <!-- HOW A ROUND WORKS (shown once, then from a link) -->
+  <section class="screen fill-warm" id="how" aria-labelledby="t-how">
+    <h2 id="t-how" data-i18n="hw_title"></h2>
+    <div class="stack" style="margin-top:16px">
+      <div class="card nudge"><span class="sticker">1</span> <strong data-i18n="hw1"></strong><p class="small" style="color:#141414;margin:6px 0 0" data-i18n="hw1d"></p></div>
+      <div class="card yellow nudge2"><span class="sticker white">2</span> <strong data-i18n="hw2"></strong><p class="small" style="color:#141414;margin:6px 0 0" data-i18n="hw2d"></p></div>
+      <div class="card green nudge3"><span class="sticker pink">3</span> <strong id="hw3-t" data-i18n="hw3"></strong><p class="small" id="hw3-d" style="color:#141414;margin:6px 0 0" data-i18n="hw3d"></p></div>
+    </div>
+    <div class="center" style="margin-top:22px"><button class="blob yellow" id="hw-go"></button></div>
+  </section>
+
+  <!-- TIMER -->
+  <section class="screen center" id="timer" aria-labelledby="t-timer">
+    <div class="deco" id="t-deco" aria-hidden="true" style="inset:0"></div>
+    <p class="script above" id="t-timer" style="margin-top:56px;margin-bottom:0" data-i18n="t_phone"></p>
+    <div class="big-time above" role="timer" id="clock">1:00</div>
+    <div class="above" style="margin-top:20px">
+      <button class="pill yellow bigbtn" id="t-start"></button>
+      <p class="script" id="t-keep" style="font-size:26px;margin:12px 0 0;display:none" data-i18n="t_keep"></p>
+    </div>
+    <div class="row above" style="margin-top:60px" id="t-controls">
+      <button class="pill pink" id="t-pause" data-i18n="t_pause"></button>
+      <button class="pill coral" id="t-early" data-i18n="t_early"></button>
+    </div>
+    <div id="t-lockbox" class="above" style="margin-top:40px;display:none">
+      <button class="hold" id="t-hold" aria-label="Emergency exit. Press and hold for 2 seconds to unlock."><span class="bar"></span><span class="txt" data-i18n="k_hold"></span></button>
+    </div>
+  </section>
+
+  <!-- TIME'S UP -->
+  <section class="screen fill-warm" id="timeup" aria-labelledby="t-timeup">
+    <h1 id="t-timeup" data-i18n="u_title"></h1>
+    <p style="font-size:18px;margin-top:14px" data-i18n="u_q"></p>
+    <div class="stack" style="margin-top:20px">
+      <button class="pill coral nudge" id="u-save"><span data-i18n="u_save"></span><span class="desc" data-i18n="u_save_d"></span></button>
+      <button class="pill yellow nudge2" id="u-more" data-i18n="u_more"></button>
+      <button class="pill nudge3" id="u-another" data-i18n="u_another"></button>
+    </div>
+    <div class="center"><button class="link" id="u-done" data-i18n="u_skip"></button></div>
+  </section>
+
+  <!-- AFTER (test mode only) -->
+  <section class="screen" id="after" aria-labelledby="t-after">
+    <h2 id="t-after" data-i18n="a_title"></h2>
+    <div class="rates" role="group" id="rates-after"></div>
+    <div class="rate-ends"><span data-i18n="easy"></span><span data-i18n="hard"></span></div>
+    <div class="center" style="margin-top:40px"><button class="blob yellow" id="a-go" disabled data-i18n="a_go"></button></div>
+  </section>
+
+  <!-- DONE -->
+  <section class="screen fill-warm" id="done" aria-labelledby="t-done">
+    <h1 id="t-done" data-i18n="r_title"></h1>
+    <p id="d-text" style="font-size:18px;margin-top:14px"></p>
+    <p style="font-size:20px;margin-top:6px" class="script" data-i18n="d_go"></p>
+    <button class="link" id="d-add" data-i18n="d_add"></button>
+    <label class="switch"><span data-i18n="d_follow"></span><input type="checkbox" id="d-follow"></label>
+    <div class="row" style="margin-top:18px">
+      <button class="pill" data-need="start" data-i18n="d_again"></button>
+      <button class="pill green" data-go="home" data-i18n="d_done"></button>
+    </div>
+  </section>
+
+  <!-- ADD -->
+  <section class="screen" id="add" aria-labelledby="t-add">
+    <button class="link" id="add-back" data-i18n="back"></button>
+    <h2 id="t-add" data-i18n="ad_title"></h2>
+    <p class="small" data-i18n="ad_sub"></p>
+    <div class="seg" role="group" aria-label="Type">
+      <button data-addtype="photo" aria-pressed="true" data-i18n="ad_photo"></button>
+      <button data-addtype="note" aria-pressed="false" data-i18n="ad_note"></button>
+      <button data-addtype="sound" aria-pressed="false" data-i18n="ad_sound"></button>
+      <button data-addtype="clip" aria-pressed="false" data-i18n="ad_clip"></button>
+    </div>
+    <div id="ad-photo">
+      <label class="pill white photo-btn" style="margin-top:12px"><span data-i18n="ad_pick_photo"></span><input type="file" id="ad-file-photo" accept="image/*"></label>
+      <img class="preview" id="ad-prev-photo" alt="" style="display:none">
+    </div>
+    <div id="ad-note" style="display:none;margin-top:12px">
+      <label for="ad-text" class="small" data-i18n="ad_text_label"></label>
+      <textarea id="ad-text" maxlength="800"></textarea>
+    </div>
+    <div id="ad-sound" style="display:none">
+      <button class="pill coral" id="rec-btn" style="margin-top:12px"></button>
+      <p class="small" id="rec-status" aria-live="polite" style="margin:6px 0"></p>
+      <label class="pill white photo-btn" style="margin-top:4px"><span data-i18n="ad_pick_sound"></span><input type="file" id="ad-file-sound" accept="audio/*"></label>
+      <audio id="ad-prev-sound" controls style="display:none;width:100%;margin-top:12px"></audio>
+      <p class="small" data-i18n="ad_sound_note"></p>
+    </div>
+    <div id="ad-clip" style="display:none">
+      <label class="pill white photo-btn" style="margin-top:12px"><span data-i18n="ad_pick_clip"></span><input type="file" id="ad-file-clip" accept="video/*"></label>
+      <video id="ad-prev-clip" controls playsinline style="display:none;width:100%;margin-top:12px;border:2.5px solid var(--ink);border-radius:20px"></video>
+      <p class="small" data-i18n="ad_clip_note"></p>
+    </div>
+    <label class="f" for="ad-title"><span data-i18n="ad_name"></span> <span class="small" data-i18n="optional"></span></label>
+    <input type="text" id="ad-title" maxlength="50">
+    <label class="switch"><span data-i18n="ad_share"></span><input type="checkbox" id="ad-share"></label>
+    <p class="small" data-i18n="ad_share_note"></p>
+    <div class="center" style="margin-top:20px"><button class="blob yellow" id="ad-save" disabled data-i18n="ad_save"></button></div>
+  </section>
+
+  <!-- LIBRARY (Mine | Together) -->
+  <section class="screen has-nav" id="library" aria-labelledby="t-lib">
+    <h2 id="t-lib" data-i18n="l_title"></h2>
+    <div class="seg" role="group" aria-label="View">
+      <button data-view="mine" aria-pressed="true" data-i18n="l_mine"></button>
+      <button data-view="together" aria-pressed="false" data-i18n="l_together"></button>
+    </div>
+    <div id="view-mine">
+      <p class="small" data-i18n="l_sub"></p>
+      <button class="link" id="l-how-toggle" style="padding-left:0" data-i18n="lh_link"></button>
+      <div class="card" id="l-how" style="display:none;margin-bottom:12px">
+        <strong data-i18n="lh_title"></strong>
+        <ol class="small" style="padding-left:18px;color:#141414;margin:8px 0 0">
+          <li data-i18n="lh1"></li><li data-i18n="lh2"></li><li data-i18n="lh3"></li>
+        </ol>
+      </div>
+      <button class="pill yellow nudge" id="l-add" data-i18n="l_add"></button>
+      <div class="seg" role="group" aria-label="Filter" style="margin-top:14px">
+        <button data-lib="all" aria-pressed="true" data-i18n="l_all"></button>
+        <button data-lib="photo" aria-pressed="false" data-i18n="ad_photo"></button>
+        <button data-lib="note" aria-pressed="false" data-i18n="ad_note"></button>
+        <button data-lib="sound" aria-pressed="false" data-i18n="ad_sound"></button>
+        <button data-lib="clip" aria-pressed="false" data-i18n="ad_clip"></button>
+      </div>
+      <p class="small" id="l-empty"></p>
+      <div class="grid" id="l-grid"></div>
+    </div>
+    <div id="view-together" style="display:none">
+      <p class="small" data-i18n="g_sub"></p>
+      <div class="card sky today" style="margin-top:12px">
+        <div style="min-width:0"><span class="small" style="color:#141414" data-i18n="g_today"></span><br><strong style="font-family:var(--serif);font-size:24px;font-weight:400" id="g-ptitle"></strong></div>
+        <button class="pill white flat" id="g-try" data-i18n="g_try"></button>
+      </div>
+      <p class="small" data-i18n="g_wall_note"></p>
+      <div class="feed" id="g-grid"></div>
+      <p class="small" data-i18n="g_safe"></p>
+    </div>
+  </section>
+
+  <!-- ITEM -->
+  <section class="screen" id="item" aria-labelledby="t-item">
+    <button class="link" data-go="library" data-i18n="back"></button>
+    <h2 id="t-item"></h2>
+    <p class="small" id="it-meta"></p>
+    <div id="it-body"></div>
+    <label class="switch"><span data-i18n="ad_share"></span><input type="checkbox" id="it-share"></label>
+    <div class="center" style="margin-top:20px"><button class="link" id="it-del" data-i18n="it_del"></button></div>
+  </section>
+
+  <!-- ME / PROFILE -->
+  <section class="screen has-nav" id="me" aria-labelledby="t-me">
+    <h2 id="t-me" data-i18n="m_title"></h2>
+    <div class="prof" style="margin-top:12px">
+      <label class="photo-btn" style="cursor:pointer" aria-label="Change profile picture">
+        <span class="avatar" id="m-avatar"></span><input type="file" id="m-file" accept="image/*">
+      </label>
+      <div style="min-width:0">
+        <strong style="font-family:var(--serif);font-size:26px;font-weight:400;display:block" id="m-name"></strong>
+        <span class="small" id="m-since"></span><br>
+        <button class="link" id="m-photo-hint" style="padding:0;min-height:0;font-size:13px" data-i18n="m_photo"></button>
+      </div>
+    </div>
+    <div id="m-guest" class="card pink" style="margin-top:14px;display:none">
+      <strong data-i18n="m_guest"></strong>
+      <p class="small" style="color:var(--ink)" data-i18n="m_guest_d"></p>
+      <div class="row"><button class="pill white flat" id="m-signup" data-i18n="w_signup"></button><button class="pill white flat" id="m-login" data-i18n="w_login"></button></div>
+    </div>
+
+    <h3 class="sub" data-i18n="m_process"></h3>
+    <div class="card">
+      <div id="m-chart" role="img" aria-label="Activity over the last 8 weeks"></div>
+      <p class="small" style="margin:4px 0 0" data-i18n="m_chart_note"></p>
+    </div>
+    <div class="grid" id="m-stats" style="margin-top:12px"></div>
+    <p class="small" data-i18n="m_stats_note"></p>
+
+    <details class="fold"><summary data-i18n="m_edit"></summary>
+      <label class="f" for="m-pname" data-i18n="m_pname"></label><input type="text" id="m-pname" maxlength="40">
+      <label class="f" for="m-line" data-i18n="m_line"></label><input type="text" id="m-line" maxlength="80">
+      <p class="f" style="margin-top:14px;font-weight:600;font-size:14px" data-i18n="m_for"></p>
+      <div class="chips wrap" id="m-years"></div>
+      <p class="f" style="font-weight:600;font-size:14px" data-i18n="m_make"></p>
+      <div class="chips wrap" id="m-chips"></div>
+    </details>
+    <details class="fold"><summary data-i18n="m_settings"></summary>
+      <label class="switch" style="margin-top:0"><strong data-i18n="m_lock"></strong><input type="checkbox" id="lock-toggle"></label>
+      <p class="small" data-i18n="m_lock_d"></p>
+      <p class="small" data-i18n="m_private"></p>
+      <button class="link" id="m-logout" data-i18n="m_logout"></button><br>
+      <button class="link" id="clear" data-i18n="m_clear"></button>
+    </details>
+  </section>
+
+  <!-- MONTHLY MISCHIEF (a separate service) -->
+  <section class="screen" id="kit" aria-labelledby="t-kit">
+    <button class="link" data-go="home" data-i18n="back"></button>
+    <h2 id="t-kit" data-i18n="k_title"></h2>
+    <p data-i18n="k_sub"></p>
+    <div class="card yellow nudge" style="margin-top:14px">
+      <span class="sticker white" data-i18n="k_ex"></span>
+      <h2 style="font-size:30px;margin-top:10px" data-i18n="k_ex_t"></h2>
+      <ul class="small" style="padding-left:18px;color:#141414;margin:8px 0 0">
+        <li data-i18n="k_ex1"></li><li data-i18n="k_ex2"></li><li data-i18n="k_ex3"></li><li data-i18n="k_ex4"></li>
+      </ul>
+    </div>
+    <h3 class="sub" data-i18n="k_pick"></h3>
+    <div class="stack">
+      <button class="kitopt" data-kit="email" aria-pressed="false"><b data-i18n="k_email"></b><span class="small" data-i18n="k_email_d"></span></button>
+      <button class="kitopt" data-kit="box" aria-pressed="false"><b data-i18n="k_box"></b><span class="small" data-i18n="k_box_d"></span></button>
+      <button class="kitopt" data-kit="none" aria-pressed="false"><b data-i18n="k_none"></b><span class="small" data-i18n="k_none_d"></span></button>
+    </div>
+    <div id="k-more">
+      <h3 class="sub" data-i18n="k_mix"></h3>
+      <div class="seg" role="group" aria-label="Topic">
+        <button data-mix="mine" aria-pressed="true" data-i18n="k_mix_mine"></button>
+        <button data-mix="any" aria-pressed="false" data-i18n="k_mix_any"></button>
+      </div>
+      <p class="small" id="k-mine-line"></p>
+      <div id="k-fair">
+        <p style="margin-bottom:4px"><strong data-i18n="k_fair"></strong> <span class="small" data-i18n="optional"></span></p>
+        <div class="chips wrap" id="k-fair-chips"></div>
+      </div>
+      <label class="f" for="k-email" data-i18n="au_email"></label><input type="email" id="k-email" inputmode="email">
+      <div class="center" style="margin-top:18px"><button class="blob yellow" id="k-save" data-i18n="k_save"></button></div>
+    </div>
+    <p class="small center" data-i18n="k_demo"></p>
+  </section>
+
+  <nav class="nav" id="nav" aria-label="Main">
+    <button data-go="home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 16 L16 5 L28 16 M7 14 V27 H25 V14 M13 27 V19 H19 V27" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="nav_home"></span></button>
+    <button data-go="library"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="9" width="21" height="15" rx="3" transform="rotate(-7 16 17)" fill="none" stroke="currentColor" stroke-width="2.6"/><rect x="7" y="8" width="21" height="15" rx="3" transform="rotate(5 17 15)" fill="#F7F5F1" stroke="currentColor" stroke-width="2.6"/></svg><span data-i18n="nav_library"></span></button>
+    <button data-go="me"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M5 28 C7 19 25 19 27 28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span data-i18n="nav_me"></span></button>
+  </nav>
+</main>
+
+<button id="demo-fab" aria-label="Demo tools" aria-expanded="false">tools</button>
+<div id="demo-panel" class="ctl" role="dialog" aria-label="Demo tools">
+  <h4 data-i18n="x_test"></h4>
+  <strong data-i18n="x_wording"></strong>
+  <div class="seg" role="group" aria-label="Wording">
+    <button data-wording="A" aria-pressed="false" data-i18n="x_wa"></button>
+    <button data-wording="B" aria-pressed="true" data-i18n="x_wb"></button>
+  </div>
+  <label><input type="checkbox" id="ratings"> <span data-i18n="x_ratings"></span></label>
+  <label><input type="checkbox" id="speed"> <span data-i18n="x_speed"></span></label>
+  <div>
+    <button class="tbtn" id="sim3" data-i18n="x_sim"></button>
+    <button class="tbtn" id="seed" data-i18n="x_seed"></button>
+    <button class="tbtn" id="csv" data-i18n="x_csv"></button>
+  </div>
+  <p class="small" style="margin-bottom:0" data-i18n="x_testnote"></p>
+</div>
+
+<script>
+(function () {
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return !store.avail(); } },
+    avail: function () { try { localStorage.setItem('unstick6.t', '1'); localStorage.removeItem('unstick6.t'); return true; } catch (e) { return false; } }
+  };
+
+  /* ================= TEXT ================= */
+  var T = {
+    optional: '(optional)', back: '← Back', easy: 'Easy', hard: 'Really hard',
+    w_sticker: 'rules optional', w_h1a: 'Make <span class="hl">something.</span>', w_h1b: 'Anything.', w_h1c: 'Even if it’s <span class="hl-green">rough.</span>',
+    w_sub: 'get unstick', w_btn: 'Start', w_note: 'You can start right now, no account needed.', w_signup: 'Sign up', w_login: 'Log in',
+    au_signup: 'Join the mess.', au_login: 'Welcome back.', au_signup_sub: 'A free account keeps your starts and your library safe, and lets you follow your own process.',
+    au_login_sub: 'Pick up where you left off.', au_name: 'Name', au_email: 'Email', au_pass: 'Password',
+    au_mail: 'Email me a prompt each month', au_create: 'Create account', au_do_login: 'Log in',
+    au_to_login: 'I already have an account', au_to_signup: 'New here? Sign up', au_skip: 'Not now, just let me start',
+    au_demo: 'Demo only: nothing is sent and your password is not saved.',
+    au_e_email: 'That email doesn’t look right.', au_e_pass: 'Use at least 8 characters for the password.', au_e_name: 'What should we call you?',
+    au_e_none: 'No account with that email on this phone. This is a demo, so accounts only live here.',
+    au_ok_signup: 'You’re in. Welcome.', au_ok_login: 'Welcome back.',
+    y_title: 'What do you make?', y_sub: 'Pick as many as you like. Prompts suggest forms you enjoy. Choose “Whatever” to keep it open.', y_go: 'Continue',
+    d_visual: 'Drawing and painting', d_illustration: 'Illustration', d_design: 'Graphic and UI design', d_photo: 'Photography', d_writing: 'Writing and poetry',
+    d_music: 'Music and sound', d_crafts: 'Crafts and textiles', d_fashion: 'Fashion', d_film: 'Film and video', d_perform: 'Dance and theater',
+    d_digital: '3D and digital art', d_food: 'Cooking', d_other: 'Whatever, surprise me',
+    ta_visual: 'a drawing', ta_illustration: 'an illustration', ta_design: 'a sketch', ta_photo: 'a photo', ta_writing: 'a few lines', ta_music: 'a tune',
+    ta_crafts: 'something made by hand', ta_fashion: 'a fashion sketch', ta_film: 'a tiny film', ta_perform: 'a movement', ta_digital: 'a digital sketch',
+    ta_food: 'a dish', ta_other: 'Any way you like', p_try: 'Try it as {x}',
+    h_hello: 'Hey {n}.', h_hello_g: 'Hey, maker.',
+    h_title: '<span class="italic">unstick</span><br>your <span class="hl">block</span>', h_q: 'What kind of trouble today?',
+    n_start: 'Nudge me', n_start_d: 'A tiny push for how you feel',
+    n_hard: 'Break a rule', n_hard_d: 'Longer and stranger',
+    n_surprise: 'Surprise me', n_surprise_d: 'No questions, zero rules',
+    h_days_none: 'Your first day is waiting.', h_days: 'You’ve made something on {n} days.', h_days_1: 'You’ve made something on 1 day.',
+    h_days_note: 'This only goes up. Missed days don’t count against you.',
+    h_acct: 'Keep your starts safe', h_acct_d: 'A free account saves your library and your process, and lets you pick up on any phone.', h_later: 'Later',
+    c_title: 'Quick, how’s it going?', c_q: 'How does starting feel right now?', c_want: 'How do you want it to feel?',
+    ck_idea: 'I have no idea what to make.', ck_worry: 'I want it to turn out well, and that’s loud.', ck_tired: 'My energy is low.', ck_pressure: 'Someone is waiting on this.', ck_none: 'None of these.',
+    wf_calm: 'Calm', wf_playful: 'Playful', wf_bold: 'Bold', wf_curious: 'Curious',
+    c_rate: 'How hard is it to start right now?', c_go: 'Hand me something', c_skip: 'Skip this',
+    p_kind: 'Tiny push', p_kind_hard: 'Rule-breaker', p_kind_wild: 'Wild card', p_phone: 'Phone down. Paper, napkin, instrument, anything.',
+    p_slip: 'You’re allowed to {x}.',
+    p_for_idea: 'No idea? This one has the ideas built in.',
+    p_for_worry: 'It’s loud in there? This one is unfair to perfect.',
+    p_for_tired: 'Low battery? This one is tiny on purpose.',
+    p_for_none: 'No questions asked. Let’s see what happens.',
+    p_for_pressure: 'Deadline energy? This one is small on purpose, and nobody is watching.',
+    p_for_want: 'Made to feel {w}.',
+    p_lock: 'Your phone locks while you make, so nothing pulls you away. Emergency exit is one long press.',
+    p_start: 'Start', p_swap: 'Not this one', p_send: 'Send to a friend',
+    t_phone: 'Phone down. Make a mess.', t_just: 'Rules are on a break.',
+    t_started: 'Tap when you start', t_started_done: 'Started ✓', t_hint: 'No need to wait. Tap the moment your pen hits the page, or you take your first step.',
+    t_keep: 'That’s the hard part. Keep going.',
+    t_coach_title: 'What is this button?', t_coach: 'Tap it the moment you begin. It’s your first small win, and it marks when the freeze broke. Your profile then shows how quickly you get going over time. Skip it if you forget, nothing breaks.', t_coach_ok: 'Got it',
+    p_how_b: 'Tip:', p_how: 'when you begin, tap the big yellow button. It’s your first small win.',
+    t_pause: 'Pause', t_resume: 'Resume', t_early: 'I’m done',
+    t_locked: 'Phone locked until the timer ends.', k_hold: 'Emergency exit: hold to unlock', k_hint: 'Press and hold for 2 seconds. Nothing is lost.',
+    u_title: 'Time!', u_q: 'Want to keep what you made?',
+    u_save: 'Save what you made', u_save_d: 'Photo, words or sound. Post it too if you like', u_skip: 'Skip',
+    u_more: 'One more minute', u_more_d: 'Rebel move. No rush',
+    u_another: 'Try another prompt', u_another_d: 'Something different', u_done: 'I’m out for now',
+    j_title: 'Your project, ten minutes.', j_body: 'Phone face down. A chime will sound.', j_back: 'I’m back',
+    a_title: 'How hard is it to start <span class="italic">now?</span>', a_go: 'Continue',
+    r_title: 'You started.', r_text: 'You gave “{p}” {m}.', r_fact: 'You got going after {t}.',
+    d_add: 'Save what you made', d_go: 'Now go make your thing. The phone can stay quiet.', d_follow: 'Check in with me in 3 days', d_again: 'Another one', d_done: 'Done for now',
+    ad_title: 'Add it to the pile.', ad_sub: 'Your library holds everything you make. Nothing here is graded.',
+    ad_photo: 'Photo', ad_note: 'Words', ad_sound: 'Sound', ad_clip: 'Clip',
+    ad_pick_clip: 'Take or choose a clip', ad_clip_note: 'Short clips only. In this demo a clip plays during this session only. The first frame stays in your library.',
+    ad_clip_err: 'That clip could not be read. Try another one.',
+    rec_start: 'Record now', rec_stop: 'Stop recording', rec_on: 'Recording… up to 25 seconds.', rec_na: 'Recording isn’t available here. Add a file instead.',
+    rec_denied: 'Microphone access was blocked. Add a file instead.', rec_big: 'That recording is too big for the demo. Try a shorter one.',
+    ad_pick_photo: 'Take or choose a photo', ad_text_label: 'Write what you made, or a few words about it.',
+    ad_pick_sound: 'Or add a file', ad_sound_note: 'Record up to 25 seconds, or add a file from your phone.',
+    ad_name: 'Name it', ad_share: 'Also post it on the anonymous wall', ad_save: 'Save',
+    ad_toobig: 'That clip is too long for the demo. Try a shorter one.', ad_full: 'Storage is full. Remove something from your library first.',
+    lh_link: 'How does this work?', lh_title: 'How your library fills up', lh1: 'Do a prompt.', lh2: 'When time is up, tap “Save what you made”: a photo, words or a sound.', lh3: 'It lands here. It only goes on the wall if you flip that switch.',
+    l_title: 'Library.', l_sub: 'Everything you save lives here. You can also add things any time.', l_add: 'Add to the pile',
+    l_mine: 'Mine', l_together: 'The wall', l_all: 'All', l_empty: 'Nothing here yet. Add a photo, some words or a sound, and it will live here.',
+    l_sample: 'Sample', it_del: 'Remove from my library', it_confirm: 'Remove this from your library?',
+    it_clip_gone: 'The clip itself is not stored in this demo. A real app would keep it.', it_when: 'Made {d}', it_with: 'from “{p}”',
+    s_title: 'Path.', s_sub: 'Optional ways to poke at your creativity. Nothing expires and nothing can break.',
+    s_map: 'Places to explore', s_map_note: '{n} of {m} places explored. Tap a place to explore it.',
+    s_ch: 'Challenges', s_ch_note: 'No deadlines. Do them when you feel like it.',
+    ch_ways: 'Make in three ways', ch_ways_d: 'Add a photo, some words and a sound to your library.',
+    ch_rule: 'Break a rule', ch_rule_d: 'Try one Rule-breaker prompt. Longer and stranger.',
+    ch_share: 'Show one rough one', ch_share_d: 'Post one unfinished piece on the anonymous wall.',
+    s_go_add: 'Add something', s_go_rule: 'Break a rule', s_done: 'Done', s_progress: '{n} of {m}',
+    g_sub: 'Warm-ups people chose to post. No names, no comments.',
+    g_today: 'Everyone is making today:', g_try: 'Try it', g_send: 'Send to a friend',
+    g_today_note: 'Others may be making it too. You never have to show anything.',
+    g_wall: 'Rough wall', g_wall_note: 'Rough warm-ups, not finished work. Tap a sticker to react. There are no counts.',
+    g_you_meta: 'Just now', g_anon: 'Anonymous maker {n}', g_made: 'Made with “{p}”.',
+    g_you: 'You, anonymous', g_metoo: 'Me too', g_metoo_on: 'Me too ✓',
+    toast_copied: 'Copied. Paste it into a message.',
+    share_text: 'Try this one with me (about {t}): “{p}: {x}”. From Unstick.',
+    f_q: 'Since your last session, did you start anything creative?',
+    f_yes: 'Yes', f_notyet: 'Not yet', f_skip: 'Skip', f_save: 'Save',
+    f_yes_q: 'What did you start? (optional)', f_no_q: 'Anything you’d like to say? (optional)',
+    m_edit: 'Edit profile', p_how_link: 'How does this work?', hw_title: 'How a round works.', hw1: 'Phone down.', hw1d: 'Use scrap: a napkin, a receipt, a voice memo, anything you don’t mind wasting.', hw2: 'Tap when you start.', hw2d: 'One tap the moment you begin. It’s your first small win, and Me shows how fast you get going.', hw3_free: 'Phone stays free.', hw3d_free: 'Use it to record, film or shoot. You can switch the lock on in Me.', hw3: 'Phone locks.', hw3d: 'It stays locked until time is up. Need out? Hold the button for 2 seconds.', hw_go_start: 'Got it, start', hw_go: 'Got it',
+    mm_b: 'Monthly Mischief', mm_d: 'A creative surprise by email or mail',
+    m_stats_note: 'Time to start is how long you take to begin after you press Start.',
+    g_safe: 'Post warm-ups only. Keep your real projects in your own library.', ad_share_note: 'Warm-ups only. Keep your real projects private.',
+    k_ex: 'Example, this month', k_ex_t: 'Theme: Edges', k_ex1: '4 prompts built around the theme', k_ex2: '1 wild card, for a day you feel brave',
+    k_ex3: '1 rule to break all month', k_ex4: 'In the box only: a mystery material and a small tool',
+    k_pick: 'How do you want it?', k_mix: 'What should the surprises be about?', k_mix_mine: 'What I make', k_mix_any: 'Anything',
+    k_based: 'Based on: {x}.', k_based_none: 'Pick what you make in Me, or switch to Anything.', k_any_line: 'A mix from every kind of making.',
+    md_visual: 'Draw it', md_design: 'Sketch it', md_writing: 'Write it', md_music: 'Hum or tap it', md_any: 'Any way you like',
+    m_places: 'Places to explore', ch_card: 'Challenge for you', ch_none: 'All challenges done. More soon.',
+    m_title: 'Me.', m_guest: 'You’re a guest', m_guest_d: 'Everything is saved on this phone only. Make an account to keep it safe.',
+    m_pname: 'Name', m_line: 'What I’m making these days', m_for: 'I’ve been making for', m_make: 'What I make',
+    m_photo: 'Change photo', m_guestname: 'Guest maker', m_since: 'Here since {d}', m_since_g: 'Just visiting',
+    y_0: 'Just starting', y_1: '1 to 3 years', y_2: '3 to 10 years', y_3: '10+ years',
+    m_process: 'My process', m_chart_note: 'Starts and things you added, per week.',
+    m_timeline: 'Lately',
+    st_days: 'days made', st_min: 'minutes making', st_lib: 'in my library', st_places: 'places explored', st_speed: 'average time to start', st_starts: 'starts',
+    m_none: 'Your first start will show up here.',
+    tl_start: 'Tried “{p}”', tl_add_photo: 'Added a photo: {p}', tl_add_note: 'Wrote: {p}', tl_add_sound: 'Added a sound: {p}', tl_add_clip: 'Added a clip: {p}', tl_untitled: 'untitled',
+    m_kit: 'Monthly mischief', m_kit_b: 'Get surprises by email or mail', m_kit_d: 'A new prompt pack each month, or a box with materials. Concept',
+    m_settings: 'Settings',
+    m_lock: 'Lock my phone while I make', m_lock_d: 'The screen locks until the timer ends so you can’t wander off. If you use your phone to record, film or shoot, leave it off. You can always unlock with a long press.',
+    m_private: 'Saved on this phone only in this demo. Private by default.', m_logout: 'Log out', m_clear: 'Clear everything on this phone', m_confirm: 'Clear all your starts, your library and your account on this phone?',
+    k_title: 'Monthly Mischief.', k_sub: 'A creative surprise once a month. It is a separate service from the app, so join only if you want it.',
+    k_email: 'By email', k_email_d: 'On the 1st of each month. Free (concept).',
+    k_box: 'By mail', k_box_d: 'A small box with materials and activities. Not built yet, so this joins a waitlist.',
+    k_none: 'No thanks', k_none_d: 'Stay in the app only.',
+    k_inside: 'What could be inside', k_fair: 'What would feel fair per month?', k_save: 'Join Monthly Mischief', k_demo: 'Concept for testing. Nothing is sent, shipped or charged.',
+    k_f0: 'Free', k_f1: 'Under $10', k_f2: '$10 to $20', k_f3: 'More than $20',
+    k_in_visual: 'An odd pen, a few paper scraps, a card that tells you to break a drawing rule.',
+    k_in_design: 'A grid pad, sticker sheets, and a constraint card that makes the brief impossible.',
+    k_in_writing: 'A deck of word cards, a postcard to write to yourself, a prompt that bans your favourite word.',
+    k_in_music: 'A pocket shaker, a rhythm card deck, a prompt to write a song using only the sounds in your kitchen.',
+    k_in_other: 'Three small materials, a rule-breaking card, and one task that asks you to swap your usual tool.',
+    k_saved: 'Saved. (Demo: nothing is sent.)', k_saved_box: 'You’re on the waitlist. (Demo: nothing is sent.)',
+    nav_home: 'Home', nav_library: 'Library', nav_me: 'Me',
+    fam_constraint: 'Limit', fam_quantity: 'Quantity', fam_body: 'Body and space', fam_break: 'Easy break',
+    fam_start: 'Start from something', fam_permission: 'Permission', fam_reframe: 'Another view', fam_concrete: 'Concrete start', fam_abstract: 'Abstract',
+    sx_constraint: 'Limits', sx_quantity: 'Quantity', sx_body: 'Body', sx_break: 'Breaks', sx_start: 'Remix', sx_permission: 'Rough', sx_reframe: 'Views', sx_concrete: 'Concrete', sx_abstract: 'Abstract',
+    sec: '{n} sec', min: '{n} min', minutes: '{n} minutes', minute: '1 minute',
+    x_title: 'What changed, and why',
+    x_test: 'Test mode (for me, not for users)', x_wording: 'Prompt wording', x_wa: 'A: direct', x_wb: 'B: playful',
+    x_ratings: 'Show ease ratings (for tests)', x_speed: 'Demo speed (timers run 10x faster)',
+    x_sim: 'Simulate 3 days later', x_seed: 'Fill with sample data', x_csv: 'Download test data (CSV)',
+    x_testnote: 'These controls are for running tests and presenting the demo. A real user would not see them.',
+    x_disclaimer: 'Demo only, not tested with real people. Accounts, the wall and the monthly kit are concepts with no server: nothing is saved online, shared or sent.',
+    x1: '<b>Each prompt has its own look,</b> so you feel what kind of ride it is before you read a word. The stop-motion movement is only in a few places.',
+    x2: '<b>The app answers how you feel.</b> Two quick questions at check-in, then the prompt talks to you.',
+    x3: '<b>Every prompt works for anyone.</b> It only suggests a form from what you make: a drawing, a tune, a few lines, a dish.',
+    x4: '<b>How the library fills.</b> Finish a prompt, tap “Save what you made”, and it lands in Library under Mine. It goes on the wall only if you flip the post switch.',
+    x5: '<b>The wall is a simple feed of big posts,</b> easy to read on a phone. You can react with an emoji, but there are no counts, no names and no comments, so nobody gets ranked.',
+    x6: '<b>Places to explore live on Home</b> because they help you choose what to make. Me is for looking back.',
+    x7: '<b>Monthly Mischief is a separate service.</b> A themed surprise by email, or a box with materials by mail.',
+    x8: '<b>“Tap when you start” has its own screen.</b> It is a small win for you and my main test measure. I haven’t shown it helps.',
+    x9: '<b>Changed after a simulated test with six composite personas.</b> The lock is off by default if your craft uses the phone, there is a “someone is waiting” option, you can record sound and add clips, and there are more prompts for people who don’t draw.'
+  };
+
+  /* ================= VIBES ================= */
+  function svg(inner, vb) { return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + (vb || '0 0 390 780') + '" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%">' + inner + '</svg>'; }
+  var VIBES = {
+    scribble: { bg: 'linear-gradient(180deg,#F7F5F1,#FFE0D2)', ink: '#141414', font: 'var(--script)', size: 66, rot: -2, shape: '55% 45% 60% 40% / 45% 55% 45% 55%', btn: '#EE6A4A',
+      deco: svg('<path d="M-10 640 C 60 560, 110 720, 180 620 S 300 540, 400 650" fill="none" stroke="#EE6A4A" stroke-width="7" stroke-linecap="round" opacity=".55"/><path d="M-10 700 C 80 650, 130 760, 220 690 S 330 640, 410 710" fill="none" stroke="#141414" stroke-width="3" stroke-linecap="round" opacity=".25"/>') },
+    wonky: { bg: 'linear-gradient(160deg,#FFE7F2,#FFF3B8)', ink: '#141414', font: 'var(--serif)', size: 56, rot: 3, shape: '62% 38% 54% 46% / 40% 62% 38% 60%', btn: '#F5A7D2', italic: true,
+      deco: svg('<circle cx="320" cy="120" r="46" fill="none" stroke="#141414" stroke-width="4" stroke-dasharray="10 12" opacity=".4"/><rect x="30" y="610" width="90" height="90" rx="10" transform="rotate(14 75 655)" fill="#F7D85F" stroke="#141414" stroke-width="3" opacity=".7"/>') },
+    remix: { bg: 'linear-gradient(135deg,#E6FFE9,#FFD9EA)', ink: '#141414', font: 'var(--serif)', size: 52, rot: -1, shape: '40px 18px 36px 14px', btn: '#8DF0A7',
+      deco: svg('<rect x="240" y="26" width="110" height="26" fill="#F7D85F" opacity=".8" transform="rotate(8 295 39)"/><rect x="20" y="640" width="120" height="26" fill="#F5A7D2" opacity=".85" transform="rotate(-10 80 653)"/><path d="M0 760 L30 740 L60 765 L95 738 L130 764 L170 740 L210 766 L250 740 L290 766 L330 742 L390 764 L390 780 L0 780Z" fill="#fff" opacity=".6"/>') },
+    count: { bg: 'radial-gradient(#9CC4FF 1.6px, transparent 1.7px) 0 0/20px 20px, #EAF3FF', ink: '#141414', font: 'var(--serif)', size: 56, rot: 0, shape: '999px', btn: '#5E9CF2',
+      deco: svg('<text x="262" y="170" font-family="Instrument Serif,serif" font-size="150" fill="#5E9CF2" opacity=".28">12</text><text x="22" y="720" font-family="Instrument Serif,serif" font-size="120" fill="#141414" opacity=".08">1 2 3</text>') },
+    walk: { bg: 'linear-gradient(180deg,#E8F6FF,#D0F6DF)', ink: '#141414', font: 'var(--script)', size: 64, rot: -1, shape: '60% 40% 50% 50% / 50% 50% 50% 50%', btn: '#8DF0A7', float: true,
+      deco: svg('<g opacity=".7" fill="#fff"><ellipse cx="90" cy="120" rx="60" ry="24"/><ellipse cx="130" cy="108" rx="40" ry="22"/><ellipse cx="300" cy="190" rx="52" ry="20"/><ellipse cx="330" cy="178" rx="34" ry="18"/></g><path d="M-10 720 C 80 690, 150 740, 240 706 S 360 690, 410 716 L410 800 L-10 800Z" fill="#B8EBCB" opacity=".8"/>') },
+    fold: { bg: 'linear-gradient(135deg,#F4EAD8 0%,#F4EAD8 49.6%,#E6D6BC 50%,#F4EAD8 50.4%,#F4EAD8 100%)', ink: '#141414', font: 'var(--serif)', size: 54, rot: 0, shape: '6px', btn: '#F7D85F',
+      deco: svg('<path d="M390 0 L390 120 L270 0Z" fill="#E6D6BC" stroke="#141414" stroke-width="2" opacity=".8"/><path d="M0 560 L390 760" stroke="#141414" stroke-width="1.5" stroke-dasharray="6 8" opacity=".3"/>') },
+    zoo: { bg: 'radial-gradient(#FFC9A5 3px, transparent 3.2px) 0 0/26px 26px, #FFEBDD', ink: '#141414', font: 'var(--serif)', size: 54, rot: 2, shape: '50%', btn: '#EE6A4A', italic: true,
+      deco: svg('<g fill="#141414" opacity=".18"><circle cx="300" cy="150" r="20"/><circle cx="350" cy="130" r="14"/><circle cx="330" cy="205" r="26"/><circle cx="60" cy="660" r="18"/><circle cx="104" cy="640" r="12"/><circle cx="90" cy="700" r="24"/></g>') },
+    color: { bg: 'radial-gradient(circle at 18% 22%,#F5A7D2 0 80px,transparent 81px), radial-gradient(circle at 84% 28%,#F7D85F 0 90px,transparent 91px), radial-gradient(circle at 56% 84%,#BFE0FF 0 110px,transparent 111px), #FBF8F2', ink: '#141414', font: 'var(--serif)', size: 56, rot: 0, shape: '999px', btn: '#F5A7D2', deco: '' },
+    type: { bg: 'repeating-linear-gradient(180deg,#FBF7EA 0,#FBF7EA 29px,#E2DAC5 30px)', ink: '#2A2A2A', font: 'var(--mono)', size: 40, rot: 0, shape: '4px', btn: '#F7D85F',
+      deco: svg('<line x1="56" y1="0" x2="56" y2="780" stroke="#EE6A4A" stroke-width="2" opacity=".5"/>') },
+    sound: { bg: 'linear-gradient(180deg,#FFEFC2,#F5D4FF)', ink: '#141414', font: 'var(--serif)', size: 56, rot: -1, shape: '999px', btn: '#F5A7D2',
+      deco: svg('<g stroke="#141414" stroke-width="2" opacity=".35"><line x1="0" y1="620" x2="390" y2="620"/><line x1="0" y1="640" x2="390" y2="640"/><line x1="0" y1="660" x2="390" y2="660"/><line x1="0" y1="680" x2="390" y2="680"/><line x1="0" y1="700" x2="390" y2="700"/></g><g fill="#141414" opacity=".6"><ellipse cx="90" cy="670" rx="11" ry="8"/><ellipse cx="170" cy="650" rx="11" ry="8"/><ellipse cx="250" cy="690" rx="11" ry="8"/></g>') },
+    void_: { bg: '#FAFAF7', ink: '#141414', font: 'var(--serif)', size: 58, rot: 0, shape: '999px', btn: '#fff', deco: '' },
+    flip: { dark: true, bg: '#141414', ink: '#F7F5F1', font: 'var(--serif)', size: 56, rot: -1, shape: '999px', btn: '#EE6A4A', italic: true,
+      deco: svg('<circle cx="320" cy="140" r="70" fill="#EE6A4A" opacity=".85"/>') },
+    speed: { bg: 'linear-gradient(180deg,#F7D85F,#FFE98A)', ink: '#141414', font: 'var(--serif)', size: 60, rot: -3, shape: '10px', btn: '#141414', btnInk: '#F7D85F',
+      deco: svg('<g stroke="#141414" stroke-width="6" opacity=".18"><line x1="-20" y1="150" x2="200" y2="40"/><line x1="40" y1="230" x2="300" y2="90"/><line x1="-20" y1="700" x2="220" y2="580"/></g>') },
+    map: { bg: 'repeating-radial-gradient(circle at 72% 28%,#E3F7D2 0,#E3F7D2 16px,#CFEEBB 16px,#CFEEBB 18px)', ink: '#141414', font: 'var(--serif)', size: 54, rot: 0, shape: '24px', btn: '#8DF0A7',
+      deco: svg('<path d="M30 640 q60 -50 120 0 t120 0" fill="none" stroke="#141414" stroke-width="2" stroke-dasharray="8 8" opacity=".4"/><text x="260" y="700" font-family="Caveat,cursive" font-size="34" fill="#141414" opacity=".45" transform="rotate(-6 260 700)">here be moods</text>') }
+  };
+
+  /* ================= PROMPTS ================= */
+  var PROMPTS = [
+    { id: 'c1', fam: 'constraint', secs: 60, mode: 'warm', b: ['worry', 'none'], d: ['any'], vibe: 'scribble', feel: ['playful', 'curious'], title: 'One line', slip: 'get lost on purpose',
+      A: 'Make something in one unbroken move: a line that never lifts, a sentence with no full stop, or a hum that never pauses.',
+      B: 'Don’t stop and don’t lift. A line, a sentence or a hum that wanders wherever it wants. It might become a coastline, a sleepy snake or a signature for a stranger.' },
+    { id: 'c2', fam: 'constraint', secs: 60, mode: 'warm', b: ['worry', 'tired', 'pressure'], d: ['any'], vibe: 'scribble', feel: ['bold', 'calm'], title: 'Five of anything', slip: 'be stingy',
+      A: 'Make five marks, five words or five sounds. Then stop.',
+      B: 'You get five. Spend them like they’re the last five on earth. Then stop.' },
+    { id: 'p1', fam: 'permission', secs: 60, mode: 'warm', b: ['worry', 'pressure'], d: ['any'], vibe: 'wonky', feel: ['playful'], title: 'Make it wonky', slip: 'make it embarrassing',
+      A: 'Make the roughest version of anything.',
+      B: 'Make the wobbliest, wonkiest version of anything you like. Wonky is the goal.' },
+    { id: 'p2', fam: 'start', secs: 90, mode: 'warm', b: ['idea', 'none', 'pressure'], d: ['any'], vibe: 'remix', feel: ['bold', 'curious'], title: 'Steal a piece', slip: 'steal, a little',
+      A: 'Take one small part of something you can see or hear. Change three things about it.',
+      B: 'Find something near you. Steal one small piece of it, then bend it three ways.' },
+    { id: 'q1', fam: 'quantity', secs: 90, mode: 'warm', b: ['idea', 'none'], d: ['any'], vibe: 'count', feel: ['playful'], title: '12 circles', slip: 'make twelve silly things',
+      A: 'Draw twelve circles. Turn each one into something different. Count, don’t judge.',
+      B: 'Twelve circles are waiting to become something: a planet, a cookie, an eye. How many different things can you find?' },
+    { id: 'q2', fam: 'quantity', secs: 90, mode: 'warm', b: ['idea'], d: ['any'], vibe: 'count', feel: ['playful', 'curious'], title: 'Ten new jobs', slip: 'give objects jobs they never applied for',
+      A: 'Pick any object near you. Write ten uses for it. Strange ones count.',
+      B: 'Pick an object near you and give it ten new jobs. Stranger jobs welcome.' },
+    { id: 'm1', fam: 'body', secs: 60, mode: 'warm', b: ['tired', 'none', 'pressure'], d: ['any'], vibe: 'walk', feel: ['calm', 'curious'], title: 'Walk your eyes', slip: 'wander off mid-thought',
+      A: 'Walk to the far side of the room and back. Then make one mark, word or sound.',
+      B: 'Take your eyes for a walk. Cross the room and back, notice one thing, then make one mark, word or sound.' },
+    { id: 'm2', fam: 'break', secs: 90, mode: 'warm', b: ['tired', 'none'], d: ['any'], vibe: 'fold', feel: ['calm', 'playful'], title: 'Fold first', slip: 'play before you work',
+      A: 'Fold a piece of paper into any shape. Open it. Use the creases.',
+      B: 'Fold a piece of paper into something. Open it up. The creases are a hidden map. Where do they lead?' },
+    { id: 'r1', fam: 'reframe', secs: 60, mode: 'warm', b: ['idea', 'none'], d: ['any'], vibe: 'zoo', feel: ['playful', 'curious'], title: 'Your day as an animal', slip: 'turn your day into a pet',
+      A: 'Pick anything: your day, an object, a project. Draw or describe it as an animal.',
+      B: 'If your day were an animal, what would it be? Draw it or describe it.' },
+    { id: 't1', fam: 'concrete', secs: 60, mode: 'warm', b: ['idea', 'tired'], d: ['any'], vibe: 'color', feel: ['calm', 'playful'], title: 'Three colours', slip: 'feel a colour before you name it',
+      A: 'Pick three colours, from pens or from the room. Make one mood with them.',
+      B: 'Grab three colours, from pens or from the room. Together they have a mood. Find out which one.' },
+    { id: 'n1', fam: 'constraint', secs: 120, mode: 'warm', b: ['worry', 'idea'], d: ['any'], vibe: 'type', feel: ['calm', 'bold'], title: 'Keep every word', slip: 'keep the typos',
+      A: 'Write for one minute. Do not delete anything.',
+      B: 'Write for one minute and keep every word, even the odd ones. They’re all part of it.' },
+    { id: 'wr1', fam: 'start', secs: 90, mode: 'warm', b: ['idea', 'none'], d: ['any'], vibe: 'type', feel: ['playful', 'curious'], title: 'Two first lines', slip: 'start things you’ll never finish',
+      A: 'Write the first line of a story. Then write a different first line.',
+      B: 'Write the first line of a story you’ll never finish. Then write another for a different one.' },
+    { id: 'wr2', fam: 'constraint', secs: 90, mode: 'warm', b: ['worry', 'idea'], d: ['any'], vibe: 'type', feel: ['bold'], title: 'Six words', slip: 'be brutally short',
+      A: 'Tell a whole story in six words.',
+      B: 'Six words. A beginning, a middle, an end. Go.' },
+    { id: 'wr3', fam: 'start', secs: 90, mode: 'warm', b: ['idea', 'tired'], d: ['any'], vibe: 'remix', feel: ['curious'], title: 'Overheard', slip: 'eavesdrop (politely)',
+      A: 'Write a line of conversation you heard today, then continue it.',
+      B: 'Steal a line of conversation from today, then let two strangers keep talking.' },
+    { id: 'mu1', fam: 'start', secs: 60, mode: 'warm', b: ['idea', 'tired'], d: ['any'], vibe: 'sound', feel: ['playful', 'curious'], title: 'Three sounds', slip: 'make a little noise',
+      A: 'Make three different sounds with your voice or things near you. Put them in an order.',
+      B: 'Find three sounds hiding in the room, or in your mouth. Put them in an order that feels like a tiny song.' },
+    { id: 'mu2', fam: 'start', secs: 60, mode: 'warm', b: ['idea', 'tired'], d: ['any'], vibe: 'sound', feel: ['playful', 'bold'], title: 'Find the beat', slip: 'turn the table into a drum',
+      A: 'Tap a rhythm on a table. Repeat it. Change one beat.',
+      B: 'Find a beat in something near you, like a table or a cup. Tap it, repeat it, change one beat.' },
+    { id: 'mu3', fam: 'break', secs: 90, mode: 'warm', b: ['tired', 'none'], d: ['any'], vibe: 'walk', feel: ['calm'], title: 'Walk your ears', slip: 'listen like a detective',
+      A: 'Listen for 60 seconds. Hum, draw or write what you hear.',
+      B: 'Take your ears for a walk around the room. Hum, draw or write the three most interesting sounds.' },
+    { id: 'de1', fam: 'reframe', secs: 120, mode: 'warm', b: ['idea', 'none'], d: ['any'], vibe: 'remix', feel: ['bold', 'curious'], title: 'Tiny annoyance', slip: 'fix things nobody asked you to',
+      A: 'Pick something small that annoys you. Sketch or describe a better version.',
+      B: 'Find one tiny annoyance nearby. Invent the thing that would make it disappear.' },
+    { id: 'de2', fam: 'quantity', secs: 120, mode: 'warm', b: ['idea', 'worry'], d: ['any'], vibe: 'count', feel: ['bold', 'curious'], title: 'Nine versions', slip: 'be extremely different, nine times',
+      A: 'Draw nine small boxes. Fill each with a different version of the same thing: a mug, a face, a word.',
+      B: 'Nine tiny boxes, one thing, nine very different versions.' },
+    { id: 'c3', fam: 'constraint', secs: 60, mode: 'warm', b: ['worry', 'pressure', 'idea'], d: ['any'], vibe: 'speed', feel: ['bold', 'playful'], title: 'One take', slip: 'not do it twice',
+      A: 'Do it in one take, no retakes: say it, film it, hum it, draw it or write it in one go.',
+      B: 'One take, no retakes. Say it, film it, hum it, draw it or write it in one go and let the mistakes stay in.' },
+    { id: 's2', fam: 'start', secs: 60, mode: 'warm', b: ['idea', 'tired', 'pressure'], d: ['any'], vibe: 'sound', feel: ['calm', 'curious'], title: 'Say it out loud', slip: 'think out loud',
+      A: 'Say out loud what you want to make, in 30 seconds. Record it or write down what you said.',
+      B: 'Tell an imaginary friend about the thing you want to make. 30 seconds, no filter. Then keep one thing you said.' },
+    { id: 'e1', fam: 'reframe', secs: 90, mode: 'warm', b: ['idea', 'pressure'], d: ['any'], vibe: 'fold', feel: ['bold', 'curious'], title: 'Cut the middle', slip: 'throw most of it away',
+      A: 'Take something you’ve made. Keep only the first and last bit. Throw the middle away.',
+      B: 'Take anything you’ve made and keep only the beginning and the end. What does the gap want to become?' },
+    /* Break a rule: longer, stranger */
+    { id: 'h1', fam: 'abstract', secs: 180, mode: 'hard', b: [], d: ['any'], vibe: 'void_', feel: ['calm'], title: 'Silence', slip: 'make nothing loud',
+      A: 'Draw, write or play the sound of silence.', B: 'What does silence look like, sound like, read like? Make it.' },
+    { id: 'h2', fam: 'abstract', secs: 300, mode: 'hard', b: [], d: ['any'], vibe: 'flip', feel: ['bold'], title: 'Opposite day', slip: 'trash your own plan',
+      A: 'Make the opposite of what you planned to make today.',
+      B: 'Do the opposite of your plan today. Make the thing you’d never make.' },
+    { id: 'h3', fam: 'quantity', secs: 180, mode: 'hard', b: [], d: ['any'], vibe: 'speed', feel: ['bold', 'playful'], title: 'Ten seconds each', slip: 'not think at all',
+      A: 'Make five tiny sketches, sentences or sounds. Ten seconds each. Then repeat with a new subject.',
+      B: 'Five tiny sketches, sentences or sounds, ten seconds each. No time to think, only time to move. Then do it again with something new.' },
+    /* Surprise me only */
+    { id: 'w1', fam: 'reframe', secs: 120, mode: 'wild', b: [], d: ['any'], vibe: 'map', feel: ['curious', 'playful'], title: 'Today as a country', slip: 'draw the weather inside you',
+      A: 'Draw or describe today as a map: places, roads, weather.',
+      B: 'Draw or describe today as a country. Where are the mountains, the storms, the quiet towns?' },
+    { id: 'w2', fam: 'reframe', secs: 90, mode: 'wild', b: [], d: ['any'], vibe: 'zoo', feel: ['playful'], title: 'A chair for a cloud', slip: 'design for the impossible',
+      A: 'Design a chair for something that has no legs.', B: 'Design a chair for a cloud. Legs optional.' },
+    { id: 'w3', fam: 'quantity', secs: 90, mode: 'wild', b: [], d: ['any'], vibe: 'wonky', feel: ['playful', 'bold'], title: 'Five versions of your name', slip: 'be several people',
+      A: 'Write your name five times, each with a different personality.',
+      B: 'Write your name five times, each as a different person: shy, loud, in a hurry…' }
+  ];
+  var BLOCKERS = ['idea', 'worry', 'pressure', 'tired', 'none'];
+  var WANTS = ['calm', 'playful', 'bold', 'curious'];
+  var DISC = ['visual', 'illustration', 'design', 'photo', 'writing', 'music', 'crafts', 'fashion', 'film', 'perform', 'digital', 'food', 'other'];
+  var FAMS = ['constraint', 'quantity', 'body', 'break', 'start', 'permission', 'reframe', 'concrete', 'abstract'];
+  var COLORS = ['#F7D85F', '#8DF0A7', '#F5A7D2', '#BFE0FF', '#F8D6C8', '#EE6A4A'];
+  var AV = ['#F5A7D2', '#F7D85F', '#8DF0A7', '#BFE0FF', '#F8D6C8'];
+
+  /* ================= STATE ================= */
+  var S = {
+    wording: store.get('unstick6.wording', 'B'), disc: store.get('unstick6.disc', []), onboarded: store.get('unstick6.onb', false),
+    user: store.get('unstick6.user', null), loggedIn: store.get('unstick6.in', false), kit: store.get('unstick6.kit', { mode: 'none', fair: '' }), dismissAcct: store.get('unstick6.dis', false),
+    screen: 'welcome', need: 'start', blocker: null, want: null, before: null, after: null, prompt: null, speed: 1, ratings: false,
+    started: null, kept: 'no', extra: false, worked: 0, lastT: null, sim3: false, lock: store.get('unstick6.lock', true), lockSet: store.get('unstick12.lockset', false),
+    history: store.get('unstick6.history', []), items: store.get('unstick6.items', []), reacts: store.get('unstick10.reacts', {}),
+    libFilter: 'all', view: 'mine', addType: 'photo', addFor: null, addData: null, curItem: null, authMode: 'signup', tryFor: '', tryAs: 'other', howOpen: false, clips: {}, addClipUrl: '', kitMode: 'none', kitFair: '', kitMix: 'mine', addNext: '', howSeen: store.get('unstick8.how', false), howFrom: 'link'
+  };
+  var timer = null, fuChoice = null, toastTm = null;
+
+  function t(k, vars) {
+    var s = T[k] != null ? T[k] : k;
+    if (vars) Object.keys(vars).forEach(function (v) { s = s.split('{' + v + '}').join(vars[v]); });
+    return s;
+  }
+  function fmtTime(sec) { sec = Math.max(0, Math.ceil(sec)); return Math.floor(sec / 60) + ':' + ('0' + (sec % 60)).slice(-2); }
+  function label(secs) { return secs % 60 ? t('sec', { n: secs }) : t('min', { n: secs / 60 }); }
+  function dur(secs) { var m = Math.max(1, Math.round(secs / 60)); return m === 1 ? t('minute') : t('minutes', { n: m }); }
+  function ptext(p) { return p[S.wording]; }
+  function byId(id) { return PROMPTS.filter(function (p) { return p.id === id; })[0]; }
+  function saveH() { return store.set('unstick6.history', S.history); }
+  function saveI() { return store.set('unstick6.items', S.items); }
+  function saveU() { return store.set('unstick6.user', S.user); }
+  function toast(msg) {
+    var el = $('#toast'); el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTm); toastTm = setTimeout(function () { el.classList.remove('show'); }, 2800);
+  }
+  function allowed(p) {
+    if (!S.disc.length || S.disc.indexOf('other') > -1) return true;
+    return p.d.indexOf('any') > -1 || p.d.some(function (x) { return S.disc.indexOf(x) > -1; });
+  }
+  function lockDefault() { return !S.disc.some(function (x) { return ['music', 'film', 'photo', 'digital'].indexOf(x) > -1; }); }
+  function dayKey(ts) { return new Date(ts).toDateString(); }
+  function madeDays() {
+    var set = {};
+    S.history.forEach(function (h) { set[dayKey(h.t)] = 1; });
+    S.items.forEach(function (i) { if (!i.sample) set[dayKey(i.t)] = 1; });
+    return set;
+  }
+
+  /* ================= TEXT APPLY ================= */
+  function applyText() {
+    $$('[data-i18n]').forEach(function (el) { el.textContent = t(el.getAttribute('data-i18n')); });
+    $$('[data-i18n-html]').forEach(function (el) { el.innerHTML = t(el.getAttribute('data-i18n-html')); });
+    $$('[data-wording]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.wording === S.wording)); });
+    $('#rates-before').setAttribute('aria-label', t('c_rate'));
+    $('#rates-after').setAttribute('aria-label', t('a_title').replace(/<[^>]+>/g, ''));
+  }
+
+  /* ================= NAVIGATION ================= */
+  var NAVS = ['home', 'library', 'me'];
+  function go(id) {
+    stopTimer();
+    S.screen = id;
+    $$('.screen').forEach(function (el) { el.classList.toggle('active', el.id === id); });
+    if (id !== 'timer') $('#timer').classList.remove('locked');
+    var scr = $('#' + id); scr.scrollTop = 0;
+    $('#nav').classList.toggle('show', NAVS.indexOf(id) > -1);
+    $$('#nav button').forEach(function (b) {
+      if (b.dataset.go === id) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+    (render[id] || function () {})();
+    var h = scr.querySelector('h1, h2, .script'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+  }
+
+  /* ================= TIMER ================= */
+  function stopTimer() { if (timer) { clearInterval(timer.id); timer = null; } }
+  function startTimer(secs, el, onDone, count) {
+    stopTimer();
+    var remaining = secs * 1000, last = Date.now();
+    timer = { paused: false, total: secs, remaining: remaining };
+    el.textContent = fmtTime(secs);
+    timer.id = setInterval(function () {
+      var now = Date.now();
+      if (!timer.paused) remaining -= (now - last) * S.speed;
+      last = now; timer.remaining = remaining;
+      el.textContent = fmtTime(remaining / 1000);
+      if (remaining <= 0) { var tm = timer; stopTimer(); if (count) S.worked += tm.total; chime(); onDone(); }
+    }, 200);
+  }
+  function elapsed() { return timer ? Math.round(timer.total - Math.max(0, timer.remaining) / 1000) : 0; }
+  function chime() {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext, ctx = new Ctx();
+      [587, 784].forEach(function (f, i) {
+        var tt = ctx.currentTime + i * 0.2, o = ctx.createOscillator(), g = ctx.createGain();
+        o.frequency.value = f; o.connect(g); g.connect(ctx.destination);
+        g.gain.setValueAtTime(0.0001, tt);
+        g.gain.exponentialRampToValueAtTime(0.2, tt + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, tt + 0.4);
+        o.start(tt); o.stop(tt + 0.45);
+      });
+      if (navigator.vibrate) navigator.vibrate([150, 80, 150]);
+    } catch (e) {}
+  }
+  function applyLock(which) {
+    var scr = $('#' + which);
+    scr.classList.toggle('locked', S.lock);
+    if (which === 'timer') { $('#t-controls').style.display = S.lock ? 'none' : ''; $('#t-lockbox').style.display = S.lock ? '' : 'none'; }
+    else { $('#j-controls').style.display = S.lock ? 'none' : ''; $('#j-lockbox').style.display = S.lock ? '' : 'none'; }
+  }
+  function attachHold(btn, onDone) {
+    var tm = null;
+    function start() { if (tm) return; btn.classList.add('holding'); tm = setTimeout(function () { tm = null; btn.classList.remove('holding'); onDone(); }, 2000); }
+    function cancel() { if (tm) { clearTimeout(tm); tm = null; } btn.classList.remove('holding'); }
+    btn.addEventListener('pointerdown', function (e) { e.preventDefault(); start(); });
+    ['pointerup', 'pointerleave', 'pointercancel', 'blur'].forEach(function (ev) { btn.addEventListener(ev, cancel); });
+    btn.addEventListener('keydown', function (e) { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); start(); } });
+    btn.addEventListener('keyup', function (e) { if (e.key === ' ' || e.key === 'Enter') cancel(); });
+  }
+
+  /* ================= PICKING ================= */
+  function pickPrompt(excludeId, opts) {
+    opts = opts || {};
+    var pool;
+    if (opts.fam) pool = PROMPTS.filter(function (p) { return p.fam === opts.fam; });
+    else if (opts.borrow) pool = PROMPTS.filter(function (p) { return p.mode !== 'hard' && p.d.indexOf('any') < 0 && !p.d.some(function (x) { return S.disc.indexOf(x) > -1; }); });
+    else if (S.need === 'hard') pool = PROMPTS.filter(function (p) { return p.mode === 'hard'; });
+    else if (S.need === 'surprise') pool = PROMPTS.slice();
+    else {
+      pool = PROMPTS.filter(function (p) { return p.mode === 'warm'; });
+      if (S.blocker && S.blocker !== 'none') pool = pool.filter(function (p) { return p.b.indexOf(S.blocker) > -1; });
+    }
+    if (!opts.borrow) {
+      var f = pool.filter(allowed); if (f.length) pool = f;
+      if (S.want && S.need === 'start') { var g = pool.filter(function (p) { return p.feel.indexOf(S.want) > -1; }); if (g.length) pool = g; }
+    }
+    pool = pool.filter(function (p) { return p.id !== excludeId; });
+    if (!pool.length) pool = PROMPTS.filter(function (p) { return p.id !== excludeId; });
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  function buildRates(host, onPick) {
+    host.innerHTML = '';
+    for (var i = 1; i <= 5; i++) {
+      var b = document.createElement('button');
+      b.className = 'rate'; b.textContent = i; b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', (function (n) { return function () {
+        $$('.rate', host).forEach(function (x) { x.setAttribute('aria-pressed', String(Number(x.textContent) === n)); });
+        onPick(n);
+      }; })(i));
+      host.appendChild(b);
+    }
+  }
+
+  /* ================= ART ================= */
+  function doodleSvg(i, withNs) {
+    var c = COLORS[i % COLORS.length], k = i % 4, s = '';
+    if (k === 0) s = '<path d="M20 120 C 40 20, 80 150, 100 60 S 150 40, 180 100" fill="none" stroke="#141414" stroke-width="5" stroke-linecap="round"/>';
+    if (k === 1) s = '<circle cx="60" cy="70" r="26" fill="none" stroke="#141414" stroke-width="5"/><circle cx="125" cy="70" r="20" fill="none" stroke="#141414" stroke-width="5"/><circle cx="95" cy="125" r="24" fill="none" stroke="#141414" stroke-width="5"/>';
+    if (k === 2) s = '<path d="M30 40 L170 50 M40 90 L150 100 M30 140 L160 130" stroke="#141414" stroke-width="6" stroke-linecap="round"/><circle cx="100" cy="95" r="8" fill="#141414"/>';
+    if (k === 3) s = '<path d="M100 30 L150 120 L50 120 Z" fill="none" stroke="#141414" stroke-width="5" stroke-linejoin="round"/><path d="M60 145 Q100 165 140 145" fill="none" stroke="#141414" stroke-width="5" stroke-linecap="round"/>';
+    return '<svg ' + (withNs ? 'xmlns="http://www.w3.org/2000/svg" ' : '') + 'viewBox="0 0 200 180" aria-hidden="true" preserveAspectRatio="xMidYMid slice"><rect width="200" height="180" fill="' + c + '"/>' + s + '</svg>';
+  }
+  function svgUrl(i) { return 'data:image/svg+xml;utf8,' + encodeURIComponent(doodleSvg(i, true)); }
+  function waveSvg(i) {
+    var c = COLORS[i % COLORS.length], bars = '';
+    var hs = [30, 60, 90, 50, 110, 70, 40, 100, 60, 30, 80, 50];
+    hs.forEach(function (h, j) { bars += '<rect x="' + (14 + j * 15) + '" y="' + (90 - h / 2) + '" width="8" height="' + h + '" rx="4" fill="#141414"/>'; });
+    return '<svg viewBox="0 0 200 180" aria-hidden="true"><rect width="200" height="180" fill="' + c + '"/>' + bars + '</svg>';
+  }
+  function tileInner(it, meta) {
+    var art = '<div class="art"></div><div class="cap"><b></b><span class="small"></span></div>';
+    return { html: art, fill: function (root) {
+      var a = root.querySelector('.art');
+      if (it.type === 'photo') { var im = document.createElement('img'); im.src = it.data; im.alt = it.title || ''; a.appendChild(im); }
+      else if (it.type === 'note') { a.style.background = COLORS[(it.t || 0) % COLORS.length]; a.innerHTML = '<div class="words"></div>'; a.querySelector('.words').textContent = it.data; }
+      else if (it.type === 'clip') { var cim = document.createElement('img'); cim.src = it.data; cim.alt = it.title || ''; a.appendChild(cim); var pb = document.createElement('span'); pb.className = 'playbadge'; pb.textContent = '\u25B6'; a.appendChild(pb); }
+      else { a.innerHTML = waveSvg((it.t || 0) % 6); }
+      root.querySelector('b').textContent = it.title || t('tl_untitled');
+      root.querySelector('.small').textContent = meta || '';
+    } };
+  }
+
+  /* ================= SCREENS ================= */
+  function followDue() {
+    var now = Date.now();
+    return S.history.filter(function (h) { return h.follow && !h.fu && (S.sim3 || now - h.t >= 3 * 864e5); })[0];
+  }
+  function dName() { return (S.user && S.user.name) ? S.user.name : ''; }
+  function drawAvatar(host, size) {
+    host.innerHTML = '';
+    if (S.user && S.user.avatar) { var im = document.createElement('img'); im.src = S.user.avatar; im.alt = ''; host.appendChild(im); host.style.background = ''; }
+    else { var n = dName() || '?'; host.textContent = n.charAt(0).toUpperCase(); host.style.background = AV[n.length % AV.length]; }
+  }
+
+  var render = {
+    auth: function () {
+      var su = S.authMode === 'signup';
+      $('#t-auth').textContent = t(su ? 'au_signup' : 'au_login');
+      $('#auth-sub').textContent = t(su ? 'au_signup_sub' : 'au_login_sub');
+      $('#auth-name-wrap').style.display = su ? '' : 'none';
+      $('#auth-go').textContent = t(su ? 'au_create' : 'au_do_login');
+      $('#auth-toggle').textContent = t(su ? 'au_to_login' : 'au_to_signup');
+      $('#a-pass').autocomplete = su ? 'new-password' : 'current-password';
+      $('#auth-err').textContent = '';
+    },
+    you: function () {
+      var host = $('#y-chips'); host.innerHTML = '';
+      DISC.forEach(function (id) {
+        var c = document.createElement('button');
+        c.className = 'chip'; c.textContent = t('d_' + id); c.setAttribute('aria-pressed', String(S.disc.indexOf(id) > -1));
+        c.addEventListener('click', function () {
+          var i = S.disc.indexOf(id); if (i > -1) S.disc.splice(i, 1); else S.disc.push(id);
+          c.setAttribute('aria-pressed', String(S.disc.indexOf(id) > -1));
+        });
+        host.appendChild(c);
+      });
+    },
+    home: function () {
+      var due = followDue();
+      $('#fu-card').style.display = due ? '' : 'none';
+      if (due) { $('#f-more').style.display = 'none'; $('#f-choices').style.display = ''; }
+      $('#h-hello').textContent = dName() ? t('h_hello', { n: dName() }) : t('h_hello_g');
+      renderStamps(); renderChallenge(); drawTimeline();
+      $('#acct-card').style.display = (!S.loggedIn && S.history.length && !S.dismissAcct) ? '' : 'none';
+    },
+    checkin: function () {
+      S.before = null; S.blocker = null; S.want = null;
+      $('#rate-before-wrap').style.display = S.ratings ? '' : 'none';
+      buildRates($('#rates-before'), function (n) { S.before = n; });
+      var host = $('#blockers'); host.innerHTML = '';
+      BLOCKERS.forEach(function (id) {
+        var c = document.createElement('button');
+        c.className = 'chip'; c.textContent = t('ck_' + id); c.setAttribute('aria-pressed', 'false');
+        c.addEventListener('click', function () {
+          var on = c.getAttribute('aria-pressed') !== 'true';
+          $$('.chip', host).forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+          c.setAttribute('aria-pressed', String(on)); S.blocker = on ? id : null;
+        });
+        host.appendChild(c);
+      });
+      var wh = $('#wants'); wh.innerHTML = '';
+      WANTS.forEach(function (id) {
+        var c = document.createElement('button');
+        c.className = 'chip'; c.textContent = t('wf_' + id); c.setAttribute('aria-pressed', 'false');
+        c.addEventListener('click', function () {
+          var on = c.getAttribute('aria-pressed') !== 'true';
+          $$('.chip', wh).forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+          c.setAttribute('aria-pressed', String(on)); S.want = on ? id : null;
+        });
+        wh.appendChild(c);
+      });
+    },
+    prompt: function () {
+      var p = S.prompt, v = VIBES[p.vibe] || VIBES.scribble, scr = $('#prompt');
+      scr.style.background = v.bg; scr.style.color = v.ink;
+      $('#p-deco').innerHTML = v.deco || '';
+      var h = $('#t-prompt'); h.style.fontFamily = v.font; h.style.fontSize = v.size + 'px'; h.style.fontStyle = v.italic ? 'italic' : 'normal';
+      h.style.transform = 'rotate(' + v.rot + 'deg)'; h.style.transformOrigin = 'left center'; h.style.lineHeight = '1';
+      h.classList.toggle('float', !!v.float);
+      var sb = $('#p-start'); sb.style.background = v.btn; sb.style.borderRadius = v.shape; sb.style.color = v.btnInk || '#141414';
+      $('#p-kind').textContent = p.mode === 'hard' ? t('p_kind_hard') : p.mode === 'wild' ? t('p_kind_wild') : t('p_kind');
+      h.textContent = p.title;
+      $('#p-text').textContent = ptext(p);
+      $('#p-slip').textContent = t('p_slip', { x: p.slip });
+      $('#p-slip').style.background = v.dark ? 'rgba(255,255,255,.1)' : 'rgba(255,255,255,.55)';
+      var feel = (S.blocker && S.blocker !== 'none') ? t('p_for_' + S.blocker) : '';
+      if (S.want && S.need === 'start') feel += (feel ? ' ' : '') + t('p_for_want', { w: t('wf_' + S.want).toLowerCase() });
+      $('#p-feel').textContent = feel; $('#p-feel').style.display = feel ? '' : 'none';
+      $('#p-time').textContent = label(p.secs);
+      if (S.tryFor !== p.id) {
+        var pool = S.disc.length ? S.disc : ['other'];
+        S.tryAs = pool[Math.floor(Math.random() * pool.length)]; S.tryFor = p.id;
+      }
+      $('#p-med').textContent = S.tryAs === 'other' ? t('ta_other') : t('p_try', { x: t('ta_' + S.tryAs) });
+    },
+    how: function () {
+      $('#hw-go').textContent = t(S.howFrom === 'start' ? 'hw_go_start' : 'hw_go');
+      $('#hw3-t').textContent = t(S.lock ? 'hw3' : 'hw3_free'); $('#hw3-d').textContent = t(S.lock ? 'hw3d' : 'hw3d_free');
+    },
+    timer: function () {
+      var p = S.prompt, v = VIBES[p.vibe] || VIBES.scribble, scr = $('#timer');
+      scr.style.background = S.lock ? '' : v.bg; scr.style.color = S.lock ? '' : v.ink;
+      $('#t-deco').innerHTML = v.deco || '';
+      applyLock('timer');
+      $('#t-pause').textContent = t('t_pause');
+      refreshStarted();
+      startTimer(S.extra ? 60 : S.prompt.secs, $('#clock'), function () { go('timeup'); }, true);
+    },
+    after: function () {
+      S.after = null; $('#a-go').disabled = true;
+      buildRates($('#rates-after'), function (n) { S.after = n; $('#a-go').disabled = false; });
+    },
+    done: function () {
+      var e = S.history[0]; if (!e) return;
+      $('#d-text').textContent = t('r_text', { p: byId(e.id).title, m: dur(e.worked || S.prompt.secs) });
+      $('#d-follow').checked = !!e.follow;
+    },
+    add: function () {
+      S.addData = null;
+      $('#ad-title').value = ''; $('#ad-text').value = ''; $('#ad-share').checked = false;
+      $('#ad-prev-photo').style.display = 'none'; $('#ad-prev-sound').style.display = 'none'; $('#ad-prev-clip').style.display = 'none'; S.addClipUrl = '';
+      $('#ad-file-photo').value = ''; $('#ad-file-sound').value = '';
+      var def = S.disc.length === 1 && S.disc[0] === 'writing' ? 'note' : S.disc.length === 1 && S.disc[0] === 'music' ? 'sound' : 'photo';
+      setAddType(def);
+      $('#ad-title').placeholder = S.addFor ? byId(S.addFor).title : '';
+    },
+    library: function () {
+      $$('[data-view]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.view === S.view)); });
+      $('#view-mine').style.display = S.view === 'mine' ? '' : 'none';
+      $('#l-how').style.display = (S.items.length === 0 || S.howOpen) ? '' : 'none';
+      $('#view-together').style.display = S.view === 'together' ? '' : 'none';
+      if (S.view === 'together') return renderTogether();
+      $$('[data-lib]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.lib === S.libFilter)); });
+      var grid = $('#l-grid'); grid.innerHTML = '';
+      var items = S.items.filter(function (i) { return S.libFilter === 'all' || i.type === S.libFilter; });
+      $('#l-empty').textContent = items.length ? '' : t('l_empty');
+      items.forEach(function (it) {
+        var meta = new Date(it.t).toLocaleDateString('en', { month: 'short', day: 'numeric' }) + (it.sample ? ' · ' + t('l_sample') : '');
+        var ti = tileInner(it, meta), b = document.createElement('button'); b.className = 'tile'; b.innerHTML = ti.html; ti.fill(b);
+        b.setAttribute('aria-label', it.title || it.type);
+        b.addEventListener('click', function () { S.curItem = it.id; go('item'); });
+        grid.appendChild(b);
+      });
+    },
+    item: function () {
+      var it = S.items.filter(function (x) { return x.id === S.curItem; })[0]; if (!it) return go('library');
+      $('#t-item').textContent = it.title || t('tl_untitled');
+      var meta = [t('it_when', { d: new Date(it.t).toLocaleDateString('en', { month: 'long', day: 'numeric' }) })];
+      if (it.promptId && byId(it.promptId)) meta.push(t('it_with', { p: byId(it.promptId).title }));
+      $('#it-meta').textContent = meta.join(' · ');
+      var body = $('#it-body'); body.innerHTML = '';
+      if (it.type === 'photo') { var im = document.createElement('img'); im.className = 'preview'; im.src = it.data; im.alt = it.title || ''; body.appendChild(im); }
+      else if (it.type === 'note') { var c = document.createElement('div'); c.className = 'card yellow'; c.style.whiteSpace = 'pre-wrap'; c.textContent = it.data; body.appendChild(c); }
+      else if (it.type === 'clip') {
+        var cv = document.createElement('video'); cv.controls = true; cv.playsInline = true; cv.style.cssText = 'width:100%;border:2.5px solid var(--ink);border-radius:20px;margin-top:12px';
+        if (S.clips[it.id]) { cv.src = S.clips[it.id]; cv.poster = it.data; body.appendChild(cv); }
+        else { var cp = document.createElement('img'); cp.className = 'preview'; cp.src = it.data; cp.alt = it.title || ''; body.appendChild(cp); var cn = document.createElement('p'); cn.className = 'small'; cn.textContent = t('it_clip_gone'); body.appendChild(cn); }
+      }
+      else if (it.data) { var a = document.createElement('audio'); a.controls = true; a.src = it.data; a.style.width = '100%'; body.appendChild(a); }
+      $('#it-share').checked = !!it.shared;
+    },
+    me: function () {
+      var u = S.user;
+      $('#lock-toggle').checked = S.lock;
+      drawAvatar($('#m-avatar'));
+      $('#m-name').textContent = dName() || t('m_guestname');
+      $('#m-since').textContent = (S.loggedIn && u) ? t('m_since', { d: new Date(u.since).toLocaleDateString('en', { month: 'short', year: 'numeric' }) }) : t('m_since_g');
+      $('#m-guest').style.display = S.loggedIn ? 'none' : '';
+      $('#m-logout').style.display = S.loggedIn ? '' : 'none';
+      $('#m-pname').value = dName(); $('#m-line').value = (u && u.line) || '';
+      var yh = $('#m-years'); yh.innerHTML = '';
+      for (var yi = 0; yi < 4; yi++) {
+        var yb = document.createElement('button'); yb.className = 'chip'; yb.textContent = t('y_' + yi);
+        yb.setAttribute('aria-pressed', String(!!u && u.years === yi));
+        yb.addEventListener('click', (function (idx, btn) { return function () {
+          ensureUser(); S.user.years = (S.user.years === idx) ? null : idx; saveU();
+          $$('.chip', yh).forEach(function (x, j) { x.setAttribute('aria-pressed', String(S.user.years === j)); });
+        }; })(yi, yb));
+        yh.appendChild(yb);
+      }
+      var host = $('#m-chips'); host.innerHTML = '';
+      DISC.forEach(function (id) {
+        var c = document.createElement('button');
+        c.className = 'chip'; c.textContent = t('d_' + id); c.setAttribute('aria-pressed', String(S.disc.indexOf(id) > -1));
+        c.addEventListener('click', function () {
+          var i = S.disc.indexOf(id); if (i > -1) S.disc.splice(i, 1); else S.disc.push(id);
+          store.set('unstick6.disc', S.disc); if (!S.lockSet) { S.lock = lockDefault(); store.set('unstick6.lock', S.lock); $('#lock-toggle').checked = S.lock; } c.setAttribute('aria-pressed', String(S.disc.indexOf(id) > -1));
+        });
+        host.appendChild(c);
+      });
+      drawChart(); drawStats();
+    },
+    kit: function () {
+      S.kitMode = S.kit.mode || 'none'; S.kitFair = S.kit.fair || ''; S.kitMix = S.kit.mix || 'mine';
+      $('#k-email').value = (S.user && S.user.email) || S.kit.email || '';
+      var fh = $('#k-fair-chips'); fh.innerHTML = '';
+      ['k_f0', 'k_f1', 'k_f2', 'k_f3'].forEach(function (k) {
+        var c = document.createElement('button'); c.className = 'chip'; c.textContent = t(k); c.setAttribute('aria-pressed', String(S.kitFair === k));
+        c.addEventListener('click', function () { S.kitFair = S.kitFair === k ? '' : k; $$('.chip', fh).forEach(function (x, j) { x.setAttribute('aria-pressed', String(S.kitFair === ['k_f0', 'k_f1', 'k_f2', 'k_f3'][j])); }); });
+        fh.appendChild(c);
+      });
+      updateKitUI();
+    }
+  };
+
+
+  function renderStamps() {
+    var got = {}; S.history.forEach(function (h) { got[h.fam] = 1; });
+    var n = Object.keys(got).length;
+    $('#s-map-note').textContent = t('s_map_note', { n: n, m: FAMS.length });
+    var host = $('#stamps'); host.innerHTML = '';
+    FAMS.forEach(function (f) {
+      var b = document.createElement('button'); b.className = 'stamp' + (got[f] ? ' got' : '');
+      b.innerHTML = '<span><b></b></span>'; b.querySelector('b').textContent = t('sx_' + f);
+      b.setAttribute('aria-label', t('fam_' + f) + (got[f] ? ', visited' : ', not visited yet'));
+      b.addEventListener('click', function () { S.need = 'surprise'; S.blocker = null; S.want = null; S.prompt = pickPrompt(null, { fam: f }); go('prompt'); });
+      host.appendChild(b);
+    });
+  }
+  function challenges() {
+    var types = {}; S.items.forEach(function (i) { if (!i.sample) types[i.type] = 1; });
+    var shared = S.items.filter(function (i) { return i.shared && !i.sample; }).length;
+    var hard = S.history.filter(function (h) { return h.mode === 'hard'; }).length;
+    return [
+      { k: 'ways', n: Object.keys(types).length, m: 3, go: 'go_add' },
+      { k: 'rule', n: Math.min(hard, 1), m: 1, go: 'go_rule' },
+      { k: 'share', n: Math.min(shared, 1), m: 1, go: 'go_add' }
+    ];
+  }
+  function renderChallenge() {
+    var c = challenges().filter(function (x) { return x.n < x.m; })[0];
+    var go_ = $('#ch-go');
+    if (!c) {
+      $('#ch-title').textContent = t('ch_none'); $('#ch-desc').textContent = ''; $('#ch-prog').textContent = ''; $('#ch-bar').style.width = '100%'; go_.style.display = 'none'; return;
+    }
+    $('#ch-title').textContent = t('ch_' + c.k); $('#ch-desc').textContent = t('ch_' + c.k + '_d');
+    $('#ch-bar').style.width = Math.round(c.n / c.m * 100) + '%'; $('#ch-prog').textContent = t('s_progress', { n: c.n, m: c.m });
+    go_.style.display = ''; go_.textContent = t('s_' + c.go); go_.onclick = function () {
+      if (c.go === 'go_add') { S.addFor = null; S.addNext = ''; go('add'); }
+      else { S.need = 'hard'; S.blocker = null; S.want = null; S.prompt = pickPrompt(); go('prompt'); }
+    };
+  }
+
+  function updateKitUI() {
+    $$('[data-kit]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.kit === S.kitMode)); });
+    $$('[data-mix]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.mix === S.kitMix)); });
+    $('#k-more').style.display = S.kitMode === 'none' ? 'none' : '';
+    $('#k-fair').style.display = S.kitMode === 'box' ? '' : 'none';
+    var mine = S.disc.filter(function (x) { return x !== 'other'; }).map(function (x) { return t('d_' + x); });
+    $('#k-mine-line').textContent = S.kitMix === 'mine' ? (mine.length ? t('k_based', { x: mine.join(', ') }) : t('k_based_none')) : t('k_any_line');
+  }
+
+  function ensureUser() { if (!S.user) { S.user = { name: '', email: '', since: Date.now(), line: '', years: null, avatar: '' }; } }
+
+  function drawChart() {
+    var weeks = [0, 0, 0, 0, 0, 0, 0, 0], now = Date.now();
+    S.history.forEach(function (h) { var w = Math.floor((now - h.t) / (7 * 864e5)); if (w >= 0 && w < 8) weeks[w]++; });
+    S.items.forEach(function (i) { if (i.sample) return; var w = Math.floor((now - i.t) / (7 * 864e5)); if (w >= 0 && w < 8) weeks[w]++; });
+    var max = Math.max(1, Math.max.apply(null, weeks)), bars = '';
+    for (var i = 0; i < 8; i++) {
+      var v = weeks[7 - i], h = Math.round(v / max * 70), x = 8 + i * 40;
+      bars += '<rect x="' + x + '" y="' + (84 - h) + '" width="28" height="' + Math.max(h, 3) + '" rx="6" fill="' + (v ? '#EE6A4A' : '#E8E3D8') + '" stroke="#141414" stroke-width="2"/>';
+      bars += '<text x="' + (x + 14) + '" y="' + (80 - h) + '" text-anchor="middle" font-size="11" fill="#141414">' + (v || '') + '</text>';
+      bars += '<text x="' + (x + 14) + '" y="102" text-anchor="middle" font-size="10" fill="#444">' + (i === 7 ? 'now' : '-' + (7 - i) + 'w') + '</text>';
+    }
+    $('#m-chart').innerHTML = '<svg viewBox="0 0 330 108" style="width:100%;height:auto" role="presentation">' + bars + '</svg>';
+  }
+  function drawStats() {
+    var days = Object.keys(madeDays()).length, mins = Math.round(S.history.reduce(function (a, h) { return a + (h.worked || 0); }, 0) / 60);
+    var got = {}; S.history.forEach(function (h) { got[h.fam] = 1; });
+    var sp = S.history.filter(function (h) { return h.started != null; }).map(function (h) { return h.started; });
+    var avg = sp.length ? Math.round(sp.reduce(function (a, b) { return a + b; }, 0) / sp.length) + ' s' : '–';
+    var data = [[days, 'st_days'], [S.history.length, 'st_starts'], [avg, 'st_speed'], [S.items.length, 'st_lib']];
+    var host = $('#m-stats'); host.innerHTML = '';
+    data.forEach(function (d) {
+      var c = document.createElement('div'); c.className = 'card'; c.style.padding = '12px 14px';
+      c.innerHTML = '<span style="font-family:var(--serif);font-size:34px;line-height:1;display:block"></span><span class="small"></span>';
+      c.children[0].textContent = d[0]; c.children[1].textContent = t(d[1]); host.appendChild(c);
+    });
+  }
+  function drawTimeline() {
+    var ev = [];
+    S.history.forEach(function (h) { ev.push({ t: h.t, text: t('tl_start', { p: byId(h.id).title }) }); });
+    S.items.forEach(function (i) { if (i.sample) return; var nm = i.title || t('tl_untitled'); ev.push({ t: i.t, text: t('tl_add_' + i.type, { p: nm }) }); });
+    ev.sort(function (a, b) { return b.t - a.t; });
+    var ul = $('#m-time'); ul.innerHTML = '';
+    $('#h-lately').style.display = ev.length ? '' : 'none'; ul.style.display = ev.length ? '' : 'none';
+    ev.slice(0, 3).forEach(function (x) {
+      var li = document.createElement('li');
+      li.innerHTML = '<div class="head"><span></span><span class="small"></span></div>';
+      li.querySelector('.head span').textContent = x.text;
+      li.querySelector('.small').textContent = new Date(x.t).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+      ul.appendChild(li);
+    });
+  }
+  var REACTS = [['\u2764\uFE0F', 'Love it', '-8deg'], ['\uD83D\uDE02', 'Made me laugh', '6deg'], ['\u2728', 'Sparkly', '-4deg'], ['\uD83D\uDE4C', 'Me too', '9deg']];
+  function avatarSvg(i) {
+    var c = COLORS[i % COLORS.length];
+    return '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" fill="' + c + '"/><circle cx="14" cy="17" r="2.6" fill="#141414"/><circle cx="26" cy="17" r="2.6" fill="#141414"/><path d="M12 26 Q20 32 28 26" fill="none" stroke="#141414" stroke-width="2.4" stroke-linecap="round"/></svg>';
+  }
+  function postEl(en, idx) {
+    var it = en.item, w = document.createElement('article'); w.className = 'post';
+    var pt = it.promptId && byId(it.promptId) ? byId(it.promptId).title : (it.title || t('tl_untitled'));
+    var h = document.createElement('div'); h.className = 'ph';
+    h.innerHTML = '<span class="pav"></span><div><strong></strong><span class="small"></span></div>';
+    h.querySelector('.pav').innerHTML = avatarSvg(idx);
+    h.querySelector('strong').textContent = en.mine ? t('g_you') : t('g_anon', { n: 12 + idx * 7 });
+    h.querySelector('.small').textContent = en.meta;
+    w.appendChild(h);
+    var m = document.createElement('div'); m.className = 'pm';
+    if (it.type === 'photo' || it.type === 'clip') {
+      var im = document.createElement('img'); im.src = it.data; im.alt = pt; m.appendChild(im);
+      if (it.type === 'clip') { var pb = document.createElement('span'); pb.className = 'playbadge'; pb.textContent = '\u25B6'; m.appendChild(pb); }
+    } else if (it.type === 'note') {
+      m.style.background = COLORS[(it.t || 0) % COLORS.length]; m.innerHTML = '<div class="pnote"></div>'; m.querySelector('.pnote').textContent = it.data;
+    } else { m.innerHTML = waveSvg((it.t || 0) % 6); }
+    w.appendChild(m);
+    if (it.type === 'sound' && it.data) { var pa = document.createElement('div'); pa.className = 'paudio'; var au = document.createElement('audio'); au.controls = true; au.src = it.data; pa.appendChild(au); w.appendChild(pa); }
+    var bar = document.createElement('div'); bar.className = 'pact'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', 'React');
+    REACTS.forEach(function (r) {
+      var on = (S.reacts[en.key] || []).indexOf(r[0]) > -1;
+      var b = document.createElement('button'); b.className = 'stk'; b.style.setProperty('--sr', r[2]);
+      b.textContent = r[0]; b.setAttribute('aria-label', r[1]); b.setAttribute('aria-pressed', String(on));
+      b.addEventListener('click', function () {
+        var list = S.reacts[en.key] || [], i = list.indexOf(r[0]);
+        if (i > -1) list.splice(i, 1); else list.push(r[0]);
+        S.reacts[en.key] = list; store.set('unstick10.reacts', S.reacts);
+        b.setAttribute('aria-pressed', String(i < 0));
+        if (i < 0) { b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+      });
+      bar.appendChild(b);
+    });
+    w.appendChild(bar);
+    var cap = document.createElement('p'); cap.className = 'pcap'; cap.textContent = t('g_made', { p: pt }); w.appendChild(cap);
+    return w;
+  }
+  function renderTogether() {
+    var pool = PROMPTS.filter(function (p) { return p.mode !== 'hard'; });
+    var p = pool[Math.floor(Date.now() / 864e5) % pool.length];
+    S.todayId = p.id; $('#g-ptitle').textContent = p.title;
+    var grid = $('#g-grid'); grid.innerHTML = '';
+    var entries = [];
+    S.items.forEach(function (i) { if (i.shared && !i.sample) entries.push({ key: 'me' + i.id, item: i, meta: t('g_you_meta'), mine: true }); });
+    [
+      { key: 's1', item: { type: 'photo', data: svgUrl(0), title: 'One line', t: 0 } },
+      { key: 's2', item: { type: 'note', data: 'A lighthouse wearing a sleeping bag.', title: 'Six words', t: 1 } },
+      { key: 's3', item: { type: 'photo', data: svgUrl(1), title: '12 circles', t: 2 } },
+      { key: 's4', item: { type: 'sound', data: '', title: 'Three sounds', t: 3 } },
+      { key: 's5', item: { type: 'note', data: 'The kettle sings in B flat, but only when nobody listens.', title: 'Overheard', t: 4 } },
+      { key: 's6', item: { type: 'photo', data: svgUrl(2), title: 'Make it wonky', t: 5 } }
+    ].forEach(function (x) { x.meta = t('l_sample'); entries.push(x); });
+    entries.forEach(function (en, idx) { grid.appendChild(postEl(en, idx)); });
+  }
+
+  function popBurst(btn) {
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var scr = $('#timer'), r = btn.getBoundingClientRect(), sr = scr.getBoundingClientRect();
+    var cx = r.left - sr.left + r.width / 2, cy = r.top - sr.top + scr.scrollTop + r.height / 2;
+    for (var i = 0; i < 12; i++) {
+      var p = document.createElement('span'); p.className = 'confetti';
+      var a = (i / 12) * Math.PI * 2, d = 70 + Math.random() * 60;
+      p.style.left = cx + 'px'; p.style.top = cy + 'px'; p.style.background = COLORS[i % COLORS.length];
+      p.style.setProperty('--dx', Math.round(Math.cos(a) * d) + 'px'); p.style.setProperty('--dy', Math.round(Math.sin(a) * d) + 'px');
+      p.style.setProperty('--rot', Math.round(Math.random() * 360) + 'deg');
+      if (i % 3 === 0) p.style.borderRadius = '50%';
+      scr.appendChild(p); (function (n) { setTimeout(function () { n.remove(); }, 900); })(p);
+    }
+  }
+
+  function refreshStarted() {
+    var b = $('#t-start');
+    if (S.started == null) {
+      b.disabled = false; b.textContent = t('t_started'); b.classList.add('pulse'); $('#t-keep').style.display = 'none';
+    } else {
+      b.disabled = true; b.classList.remove('pulse'); b.textContent = t('t_started_done', { t: fmtTime(S.started) }); $('#t-keep').style.display = '';
+    }
+  }
+
+  /* ================= FLOW ================= */
+  function recordEntry() {
+    var e = { t: Date.now(), id: S.prompt.id, fam: S.prompt.fam, wording: S.wording, checkin: S.blocker || '', want: S.want || '', mode: S.need,
+      before: S.before, after: S.after, started: S.started, kept: S.kept, worked: S.worked, follow: false, fu: '', fuNote: '' };
+    S.history.unshift(e); saveH(); return e;
+  }
+  function finish() {
+    if (S.ratings && S.before && S.after == null && S.screen !== 'after') { go('after'); return; }
+    var e = S.history[0] && S.history[0].t === S.lastT ? S.history[0] : recordEntry();
+    S.lastT = e.t; if (S.after) { e.after = S.after; saveH(); }
+    go('done');
+  }
+  function sharePrompt(p) {
+    var text = t('share_text', { t: label(p.secs), p: p.title, x: ptext(p) });
+    if (navigator.share) { navigator.share({ text: text }).catch(function () {}); return; }
+    try { navigator.clipboard.writeText(text).then(function () { toast(t('toast_copied')); }, function () { toast(text); }); }
+    catch (e) { toast(text); }
+  }
+
+  function setAddType(type) {
+    S.addType = type; S.addData = type === 'note' ? '' : null;
+    $$('[data-addtype]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.addtype === type)); });
+    $('#ad-photo').style.display = type === 'photo' ? '' : 'none';
+    $('#ad-note').style.display = type === 'note' ? '' : 'none';
+    $('#ad-sound').style.display = type === 'sound' ? '' : 'none';
+    $('#ad-clip').style.display = type === 'clip' ? '' : 'none';
+    updateRec();
+    updateSave();
+  }
+  var rec = null, recChunks = [], recTimer = null;
+  function updateRec() {
+    var on = rec && rec.state === 'recording';
+    $('#rec-btn').textContent = t(on ? 'rec_stop' : 'rec_start');
+    $('#rec-status').textContent = on ? t('rec_on') : '';
+  }
+  function updateSave() {
+    var ok = S.addType === 'note' ? $('#ad-text').value.trim().length > 0 : !!S.addData;
+    $('#ad-save').disabled = !ok;
+  }
+  function compress(file, max, cb) {
+    var rd = new FileReader();
+    rd.onload = function () {
+      var im = new Image();
+      im.onload = function () {
+        var sc = Math.min(1, max / Math.max(im.width, im.height)), cv = document.createElement('canvas');
+        cv.width = Math.round(im.width * sc); cv.height = Math.round(im.height * sc);
+        cv.getContext('2d').drawImage(im, 0, 0, cv.width, cv.height);
+        cb(cv.toDataURL('image/jpeg', 0.72));
+      };
+      im.src = rd.result;
+    };
+    rd.readAsDataURL(file);
+  }
+
+  /* ================= EVENTS ================= */
+  document.addEventListener('click', function (e) {
+    var w = e.target.closest('[data-wording]');
+    if (w) { S.wording = w.dataset.wording; store.set('unstick6.wording', S.wording); applyText(); if (S.screen === 'prompt') render.prompt(); return; }
+    var lb = e.target.closest('[data-lib]');
+    if (lb) { S.libFilter = lb.dataset.lib; return render.library(); }
+    var vw = e.target.closest('[data-view]');
+    if (vw) { S.view = vw.dataset.view; return render.library(); }
+    var at = e.target.closest('[data-addtype]');
+    if (at) { return setAddType(at.dataset.addtype); }
+    var kt = e.target.closest('[data-kit]');
+    if (kt) { S.kitMode = kt.dataset.kit; return updateKitUI(); }
+    var mx = e.target.closest('[data-mix]');
+    if (mx) { S.kitMix = mx.dataset.mix; return updateKitUI(); }
+    var tg = e.target.closest('[data-go],[data-need],[data-back]');
+    if (!tg) return;
+    if (tg.dataset.need) {
+      S.need = tg.dataset.need;
+      if (S.need === 'start') return go('checkin');
+      S.blocker = null; S.want = null; S.before = null; S.prompt = pickPrompt(); return go('prompt');
+    }
+    if (tg.dataset.go) return go(tg.dataset.go);
+    if (tg.hasAttribute('data-back')) return go('home');
+  });
+
+  /* welcome + auth */
+  $('#w-start').addEventListener('click', function () { go(S.onboarded ? 'home' : 'you'); });
+  $('#w-signup').addEventListener('click', function () { S.authMode = 'signup'; go('auth'); });
+  $('#w-login').addEventListener('click', function () { S.authMode = 'login'; go('auth'); });
+  $('#h-signup').addEventListener('click', function () { S.authMode = 'signup'; go('auth'); });
+  $('#h-later').addEventListener('click', function () { S.dismissAcct = true; store.set('unstick6.dis', true); render.home(); });
+  $('#m-signup').addEventListener('click', function () { S.authMode = 'signup'; go('auth'); });
+  $('#m-login').addEventListener('click', function () { S.authMode = 'login'; go('auth'); });
+  $('#auth-back').addEventListener('click', function () { go(S.onboarded ? 'me' : 'welcome'); });
+  $('#auth-toggle').addEventListener('click', function () { S.authMode = S.authMode === 'signup' ? 'login' : 'signup'; render.auth(); });
+  $('#auth-skip').addEventListener('click', function () { go(S.onboarded ? 'home' : 'you'); });
+  $('#auth-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var name = $('#a-name').value.trim(), email = $('#a-email').value.trim(), pass = $('#a-pass').value, err = $('#auth-err');
+    var su = S.authMode === 'signup';
+    if (su && !name) { err.textContent = t('au_e_name'); return $('#a-name').focus(); }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { err.textContent = t('au_e_email'); return $('#a-email').focus(); }
+    if (pass.length < 8) { err.textContent = t('au_e_pass'); return $('#a-pass').focus(); }
+    $('#a-pass').value = '';   /* the demo never keeps the password */
+    if (su) {
+      ensureUser(); S.user.name = name; S.user.email = email; S.user.since = Date.now();
+      saveU(); S.loggedIn = true; store.set('unstick6.in', true); toast(t('au_ok_signup'));
+    } else {
+      if (!S.user || S.user.email.toLowerCase() !== email.toLowerCase()) { err.textContent = t('au_e_none'); return; }
+      S.loggedIn = true; store.set('unstick6.in', true); toast(t('au_ok_login'));
+    }
+    go(S.onboarded ? 'me' : 'you');
+  });
+  $('#y-go').addEventListener('click', function () { S.onboarded = true; store.set('unstick6.onb', true); store.set('unstick6.disc', S.disc); if (!S.lockSet) { S.lock = lockDefault(); store.set('unstick6.lock', S.lock); } go('home'); });
+
+  /* core flow */
+  $('#go-prompt').addEventListener('click', function () { S.prompt = pickPrompt(); go('prompt'); });
+  $('#skip-check').addEventListener('click', function () { S.blocker = null; S.want = null; S.before = null; S.prompt = pickPrompt(); go('prompt'); });
+  $('#p-swap').addEventListener('click', function () { S.prompt = pickPrompt(S.prompt.id); render.prompt(); });
+  $('#p-how').addEventListener('click', function () { S.howFrom = 'link'; go('how'); });
+  function beginRound() { S.started = null; S.kept = 'no'; S.extra = false; S.worked = 0; S.lastT = null; S.after = null; go('timer'); }
+  $('#p-start').addEventListener('click', function () {
+    if (!S.howSeen) { S.howFrom = 'start'; go('how'); } else beginRound();
+  });
+  $('#hw-go').addEventListener('click', function () {
+    S.howSeen = true; store.set('unstick8.how', true);
+    if (S.howFrom === 'start') beginRound(); else go('prompt');
+  });
+  $('#t-start').addEventListener('click', function () {
+    if (!timer || S.started != null) return;
+    S.started = elapsed() + (S.extra ? S.prompt.secs : 0); refreshStarted(); popBurst($('#t-start'));
+  });
+  $('#t-pause').addEventListener('click', function () {
+    if (!timer) return; timer.paused = !timer.paused; this.textContent = timer.paused ? t('t_resume') : t('t_pause');
+  });
+  $('#t-early').addEventListener('click', function () { if (timer) S.worked += elapsed(); stopTimer(); go('timeup'); });
+  attachHold($('#t-hold'), function () { if (timer) S.worked += elapsed(); stopTimer(); go('timeup'); });
+  $('#lock-toggle').addEventListener('change', function () { S.lock = this.checked; S.lockSet = true; store.set('unstick6.lock', S.lock); store.set('unstick12.lockset', true); });
+  $('#u-more').addEventListener('click', function () { S.kept = 'yes'; S.extra = true; go('timer'); });
+  $('#u-save').addEventListener('click', function () {
+    var e = (S.history[0] && S.history[0].t === S.lastT) ? S.history[0] : recordEntry();
+    S.lastT = e.t; S.addFor = e.id; S.addNext = 'done'; go('add');
+  });
+  $('#u-another').addEventListener('click', function () { recordEntry(); if (S.need === 'start') S.need = 'surprise'; S.prompt = pickPrompt(S.prompt.id); go('prompt'); });
+  $('#u-done').addEventListener('click', function () { S.lastT = null; finish(); });
+  $('#a-go').addEventListener('click', function () { finish(); });
+  $('#speed').addEventListener('change', function () { S.speed = this.checked ? 10 : 1; });
+  $('#ratings').addEventListener('change', function () { S.ratings = this.checked; });
+  $('#d-follow').addEventListener('change', function () { if (S.history[0]) { S.history[0].follow = this.checked; saveH(); } });
+  $('#d-add').addEventListener('click', function () { S.addFor = S.history[0] ? S.history[0].id : null; S.addNext = 'backdone'; go('add'); });
+
+  /* add + items */
+  $('#l-how-toggle').addEventListener('click', function () { S.howOpen = !S.howOpen; render.library(); });
+  $('#l-add').addEventListener('click', function () { S.addFor = null; S.addNext = ''; go('add'); });
+  $('#add-back').addEventListener('click', function () { go(S.addNext === 'done' ? 'timeup' : S.addNext === 'backdone' ? 'done' : 'library'); });
+  $('#ad-file-photo').addEventListener('change', function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    compress(f, 520, function (url) { S.addData = url; var p = $('#ad-prev-photo'); p.src = url; p.style.display = ''; updateSave(); });
+  });
+  $('#ad-file-sound').addEventListener('change', function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    if (f.size > 500 * 1024) { toast(t('ad_toobig')); this.value = ''; return; }
+    var rd = new FileReader();
+    rd.onload = function () { S.addData = rd.result; var a = $('#ad-prev-sound'); a.src = rd.result; a.style.display = ''; updateSave(); };
+    rd.readAsDataURL(f);
+  });
+  $('#rec-btn').addEventListener('click', function () {
+    if (rec && rec.state === 'recording') { rec.stop(); return; }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) { toast(t('rec_na')); return; }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      recChunks = [];
+      rec = new MediaRecorder(stream, { audioBitsPerSecond: 48000 });
+      rec.ondataavailable = function (e) { if (e.data && e.data.size) recChunks.push(e.data); };
+      rec.onstop = function () {
+        stream.getTracks().forEach(function (tr) { tr.stop(); }); clearTimeout(recTimer);
+        var blob = new Blob(recChunks, { type: rec.mimeType || 'audio/webm' });
+        if (blob.size > 700 * 1024) { toast(t('rec_big')); updateRec(); return; }
+        var rd = new FileReader();
+        rd.onload = function () { S.addData = rd.result; var a = $('#ad-prev-sound'); a.src = rd.result; a.style.display = ''; updateSave(); };
+        rd.readAsDataURL(blob); updateRec();
+      };
+      rec.start(); updateRec();
+      recTimer = setTimeout(function () { if (rec && rec.state === 'recording') rec.stop(); }, 25000);
+    }, function () { toast(t('rec_denied')); });
+  });
+  $('#ad-file-clip').addEventListener('change', function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    var url = URL.createObjectURL(f), tmp = document.createElement('video');
+    tmp.muted = true; tmp.playsInline = true; tmp.preload = 'auto'; tmp.src = url;
+    tmp.addEventListener('loadeddata', function () { try { tmp.currentTime = Math.min(0.5, (tmp.duration || 1) / 2); } catch (e) {} });
+    tmp.addEventListener('seeked', function () {
+      var w = tmp.videoWidth || 480, h = tmp.videoHeight || 270, sc = Math.min(1, 480 / Math.max(w, h)), cv = document.createElement('canvas');
+      cv.width = Math.round(w * sc); cv.height = Math.round(h * sc);
+      cv.getContext('2d').drawImage(tmp, 0, 0, cv.width, cv.height);
+      S.addData = cv.toDataURL('image/jpeg', 0.7); S.addClipUrl = url;
+      var v = $('#ad-prev-clip'); v.src = url; v.style.display = ''; updateSave();
+    }, { once: true });
+    tmp.addEventListener('error', function () { toast(t('ad_clip_err')); });
+  });
+  $('#ad-text').addEventListener('input', updateSave);
+  $('#ad-save').addEventListener('click', function () {
+    var data = S.addType === 'note' ? $('#ad-text').value.trim() : S.addData; if (!data) return;
+    var it = { id: 'i' + Date.now(), t: Date.now(), type: S.addType, data: data, title: $('#ad-title').value.trim() || (S.addFor ? byId(S.addFor).title : ''),
+      promptId: S.addFor || '', shared: $('#ad-share').checked };
+    S.items.unshift(it);
+    if (S.addType === 'clip' && S.addClipUrl) S.clips[it.id] = S.addClipUrl;
+    if (!saveI()) { S.items.shift(); toast(t('ad_full')); return; }
+    S.addFor = null; S.view = 'mine';
+    if (S.addNext === 'done') { S.addNext = ''; finish(); } else if (S.addNext === 'backdone') { S.addNext = ''; go('done'); } else go('library');
+  });
+  $('#it-share').addEventListener('change', function () {
+    var it = S.items.filter(function (x) { return x.id === S.curItem; })[0]; if (it) { it.shared = this.checked; saveI(); }
+  });
+  $('#it-del').addEventListener('click', function () {
+    if (!confirm(t('it_confirm'))) return;
+    S.items = S.items.filter(function (x) { return x.id !== S.curItem; }); saveI(); go('library');
+  });
+  $('#g-try').addEventListener('click', function () { S.need = 'surprise'; S.blocker = null; S.want = null; S.prompt = byId(S.todayId); go('prompt'); });
+
+  /* profile */
+  $('#m-pname').addEventListener('input', function () { ensureUser(); S.user.name = this.value.trim(); saveU(); $('#m-name').textContent = dName() || t('m_guestname'); drawAvatar($('#m-avatar')); });
+  $('#m-line').addEventListener('input', function () { ensureUser(); S.user.line = this.value; saveU(); });
+  $('#m-file').addEventListener('change', function () {
+    var f = this.files && this.files[0]; if (!f) return;
+    compress(f, 200, function (url) { ensureUser(); S.user.avatar = url; saveU(); drawAvatar($('#m-avatar')); });
+  });
+  $('#m-photo-hint').addEventListener('click', function () { $('#m-file').click(); });
+  $('#m-logout').addEventListener('click', function () { S.loggedIn = false; store.set('unstick6.in', false); toast('Logged out.'); render.me(); });
+  $('#h-kit').addEventListener('click', function () { go('kit'); });
+  $('#k-save').addEventListener('click', function () {
+    S.kit = { mode: S.kitMode, fair: S.kitFair, mix: S.kitMix, email: $('#k-email').value.trim() }; store.set('unstick6.kit', S.kit);
+    toast(t(S.kitMode === 'box' ? 'k_saved_box' : 'k_saved'));
+  });
+
+  /* follow-up card */
+  $('#f-choices').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-fu]'); if (!b) return;
+    fuChoice = b.dataset.fu;
+    if (fuChoice === 'skip') return saveFollow();
+    $('#f-note-label').textContent = t(fuChoice === 'yes' ? 'f_yes_q' : 'f_no_q');
+    $('#f-choices').style.display = 'none'; $('#f-more').style.display = ''; $('#f-note').focus();
+  });
+  $('#f-save').addEventListener('click', saveFollow);
+  function saveFollow() {
+    var h = followDue();
+    if (h) { h.fu = fuChoice; h.fuNote = $('#f-note').value.trim(); saveH(); }
+    $('#f-note').value = ''; render.home();
+  }
+
+  $('#clear').addEventListener('click', function () {
+    if (!confirm(t('m_confirm'))) return;
+    S.history = []; S.items = []; S.user = null; S.loggedIn = false; S.kit = { mode: 'none', fair: '' }; S.dismissAcct = false;
+    saveH(); saveI(); store.set('unstick6.user', null); store.set('unstick6.in', false); store.set('unstick6.kit', S.kit); store.set('unstick6.dis', false);
+    go('welcome');
+  });
+  $('#sim3').addEventListener('click', function () { S.sim3 = true; go('home'); });
+  $('#seed').addEventListener('click', function () {
+    var now = Date.now(), d = 864e5;
+    var fam = ['constraint', 'quantity', 'start', 'permission'], pids = ['c1', 'q1', 'p2', 'p1', 'c2', 'q2', 'm2'];
+    var seeds = [
+      { type: 'photo', data: svgUrl(0), title: 'One line on the bus', age: 0 },
+      { type: 'note', data: 'The streetlight blinked twice, like it was thinking about something it would not say.', title: 'Overheard', age: 1 },
+      { type: 'photo', data: svgUrl(1), title: 'Twelve circles', age: 2 },
+      { type: 'note', data: 'A bakery that only sells yesterday.', title: 'Six words', age: 9 },
+      { type: 'photo', data: svgUrl(2), title: 'Make it wonky', age: 12 },
+      { type: 'photo', data: svgUrl(3), title: 'Cloud chair', age: 18 }
+    ];
+    seeds.forEach(function (s, i) { S.items.push({ id: 'seed' + i + now, t: now - s.age * d, type: s.type, data: s.data, title: s.title, promptId: '', shared: false, sample: false }); });
+    pids.forEach(function (id, i) {
+      var p = byId(id);
+      S.history.push({ t: now - (i * 3 + 1) * d, id: id, fam: p.fam, wording: 'B', checkin: '', want: '', mode: 'start', before: null, after: null, started: 8 + i, kept: 'no', worked: p.secs, follow: false, fu: '', fuNote: '' });
+    });
+    S.history.sort(function (a, b) { return b.t - a.t; }); S.items.sort(function (a, b) { return b.t - a.t; });
+    ensureUser(); if (!S.user.name) S.user.name = 'Daniela'; if (!S.user.line) S.user.line = 'Posters, odd notebooks and tiny sound experiments'; S.user.years = 1;
+    S.user.since = now - 30 * d; S.loggedIn = true; if (!S.disc.length) { S.disc = ['visual', 'writing']; store.set('unstick6.disc', S.disc); }
+    S.onboarded = true; store.set('unstick6.onb', true); store.set('unstick6.in', true);
+    saveH(); saveI(); saveU(); go('me');
+  });
+  $('#csv').addEventListener('click', function () {
+    var cols = ['date', 'wording', 'mode', 'checkin', 'want', 'prompt', 'family', 'ease_before', 'ease_after', 'seconds_to_start',
+      'kept_going', 'seconds_worked', 'followup_wanted', 'followup', 'followup_note'];
+    var q = function (v) { v = v == null ? '' : String(v); return '"' + v.replace(/"/g, '""') + '"'; };
+    var rows = S.history.map(function (h) {
+      return [new Date(h.t).toISOString(), h.wording, h.mode, h.checkin, h.want, h.id, h.fam, h.before, h.after, h.started, h.kept,
+        h.worked, h.follow, h.fu, h.fuNote].map(q).join(',');
+    });
+    var blob = new Blob([cols.join(',') + '\n' + rows.join('\n')], { type: 'text/csv' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'unstick-test-data.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  if (/[?&]demo=1/.test(location.search)) {
+    document.body.classList.add('demo');
+    $('#demo-fab').addEventListener('click', function () {
+      var p = $('#demo-panel'); p.classList.toggle('open'); this.setAttribute('aria-expanded', String(p.classList.contains('open')));
+    });
+  }
+  applyText();
+})();
+</script>
+</body>
+</html>
